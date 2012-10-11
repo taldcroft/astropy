@@ -561,7 +561,7 @@ class Table(object):
         if type(masked) != bool and masked is not None:
             raise TypeError('mask should be a boolean or None')
         else:
-            self.masked = masked
+            self._masked = masked
 
         # Set up a placeholder empty table
         self._data = None
@@ -954,10 +954,6 @@ class Table(object):
     @property
     def masked(self):
         return self._masked
-
-    @masked.setter
-    def masked(self, masked):
-        self._masked = masked
 
     @property
     def dtype(self):
