@@ -1,8 +1,10 @@
+import abc
 import sys
 from copy import deepcopy
 import collections
 
 import numpy as np
+from numpy import ma
 
 from ..utils import OrderedDict, isiterable
 from .structhelper import _drop_fields
@@ -91,7 +93,173 @@ class TableColumns(OrderedDict):
         return list(OrderedDict.values(self))
 
 
-class Column(np.ndarray):
+class BaseColumn(object):
+
+    __metaclass__ = abc.ABCMeta
+
+    def __array_finalize__(self, obj):
+        # Obj will be none for direct call to Column() creator
+        if obj is None:
+            return
+
+        # Self was created from template (e.g. obj[slice] or (obj * 2))
+        # or viewcast e.g. obj.view(Column).  In either case we want to
+        # init Column attributes for self from obj if possible.
+        self.parent_table = None
+        for attr in ('name', 'units', 'format', 'description'):
+            val = getattr(obj, attr, None)
+            setattr(self, attr, val)
+        self.meta = deepcopy(getattr(obj, 'meta', {}))
+
+    def _get_name(self):
+        return self._name
+
+    def _set_name(self, val):
+        if self.parent_table is not None:
+            table = self.parent_table
+            table.columns._rename_column(self.name, val)
+            table._data.dtype.names = table.columns.keys()
+
+        self._name = val
+
+    name = property(_get_name, _set_name)
+
+    @property
+    def descr(self):
+        """Array-interface compliant full description of the column.
+
+        This returns a 3-tuple (name, type, shape) that can always be
+        used in a structured array dtype definition.
+        """
+        return (self.name, self.dtype.str, self.shape[1:])
+
+    def __repr__(self):
+        if self.name:
+            print "HERE1"
+            out = "<Column name={0} units={1} format={2} " \
+                "description={3}>\n{4}".format(
+                repr(self.name), repr(self.units),
+                repr(self.format), repr(self.description), repr(self.data))
+        else:
+            print "HERE2"
+            out = repr(self.data)
+        return out
+
+    def attrs_equal(self, col):
+        """Compare the column attributes of ``col`` to this object.
+
+        The comparison attributes are: name, units, dtype, format, description,
+        and meta.
+
+        Parameters
+        ----------
+        col: Column
+            Comparison column
+
+        Returns
+        -------
+        equal: boolean
+            True if all attributes are equal
+        """
+        if not isinstance(col, self.__class__):
+            raise ValueError('Comparison `col` must be a Column object')
+
+        attrs = ('name', 'units', 'dtype', 'format', 'description', 'meta')
+        equal = all(getattr(self, x) == getattr(col, x) for x in attrs)
+
+        return equal
+
+    def pformat(self, max_lines=None, show_name=True, show_units=False):
+        """Return a list of formatted string representation of column values.
+
+        If no value of `max_lines` is supplied then the height of the screen
+        terminal is used to set `max_lines`.  If the terminal height cannot be
+        determined then the default will be determined using the
+        `astropy.table.pprint.MAX_LINES` configuration item. If a negative
+        value of `max_lines` is supplied then there is no line limit applied.
+
+        Parameters
+        ----------
+        max_lines : int
+            Maximum lines of output (header + data rows)
+
+        show_name : bool
+            Include column name (default=True)
+
+        show_units : bool
+            Include a header row for units (default=False)
+
+        Returns
+        -------
+        lines : list
+            List of lines with header and formatted column values
+
+        """
+        lines, n_header = _pformat_col(self, max_lines, show_name, show_units)
+        return lines
+
+    def pprint(self, max_lines=None, show_name=True, show_units=False):
+        """Print a formatted string representation of column values.
+
+        If no value of `max_lines` is supplied then the height of the screen
+        terminal is used to set `max_lines`.  If the terminal height cannot be
+        determined then the default will be determined using the
+        `astropy.table.pprint.MAX_LINES` configuration item. If a negative
+        value of `max_lines` is supplied then there is no line limit applied.
+
+        Parameters
+        ----------
+        max_lines : int
+            Maximum number of values in output
+
+        show_name : bool
+            Include column name (default=True)
+
+        show_units : bool
+            Include a header row for units (default=False)
+        """
+        lines, n_header = _pformat_col(self, max_lines, show_name, show_units)
+        for i, line in enumerate(lines):
+            if i < n_header:
+                color_print(line, 'red')
+            else:
+                print line
+
+    def more(self, max_lines=None, show_name=True, show_units=False):
+        """Interactively browse column with a paging interface.
+
+        Supported keys::
+
+          f, <space> : forward one page
+          b : back one page
+          r : refresh same page
+          n : next row
+          p : previous row
+          < : go to beginning
+          > : go to end
+          q : quit browsing
+          h : print this help
+
+        Parameters
+        ----------
+        max_lines : int
+            Maximum number of lines in table output
+
+        show_name : bool
+            Include a header row for column names (default=True)
+
+        show_units : bool
+            Include a header row for units (default=False)
+
+        """
+        _more_tabcol(self, max_lines=max_lines, show_name=show_name,
+                     show_units=show_units)
+
+    def __str__(self):
+        lines, n_header = _pformat_col(self)
+        return '\n'.join(lines)
+
+class Column(np.ndarray, BaseColumn):
     """Define a data column for use in a Table object.
 
     Parameters
@@ -190,33 +358,6 @@ class Column(np.ndarray):
 
         return self
 
-    def __array_finalize__(self, obj):
-        # Obj will be none for direct call to Column() creator
-        if obj is None:
-            return
-
-        # Self was created from template (e.g. obj[slice] or (obj * 2))
-        # or viewcast e.g. obj.view(Column).  In either case we want to
-        # init Column attributes for self from obj if possible.
-        self.parent_table = None
-        for attr in ('name', 'units', 'format', 'description'):
-            val = getattr(obj, attr, None)
-            setattr(self, attr, val)
-        self.meta = deepcopy(getattr(obj, 'meta', {}))
-
-    def _get_name(self):
-        return self._name
-
-    def _set_name(self, val):
-        if self.parent_table is not None:
-            table = self.parent_table
-            table.columns._rename_column(self.name, val)
-            table._data.dtype.names = table.columns.keys()
-
-        self._name = val
-
-    name = property(_get_name, _set_name)
-
     @property
     def data(self):
         return self.view(np.ndarray)
@@ -232,138 +373,56 @@ class Column(np.ndarray):
         return Column(self.name, data, units=self.units, format=self.format,
                       description=self.description, meta=deepcopy(self.meta))
 
-    @property
-    def descr(self):
-        """Array-interface compliant full description of the column.
 
-        This returns a 3-tuple (name, type, shape) that can always be
-        used in a structured array dtype definition.
-        """
-        return (self.name, self.dtype.str, self.shape[1:])
+class MaskedColumn(ma.MaskedArray, BaseColumn):
 
-    def __repr__(self):
-        if self.name:
-            out = "<Column name={0} units={1} format={2} " \
-                "description={3}>\n{4}".format(
-                repr(self.name), repr(self.units),
-                repr(self.format), repr(self.description), repr(self.data))
+    def __new__(cls, name, data=None,
+                 dtype=None, shape=(), length=0,
+                 description=None, units=None, format=None, meta=None):
+
+        if data is None:
+            dtype = (np.dtype(dtype).str, shape)
+            self_data = ma.zeros(length, dtype=dtype)
+        elif isinstance(data, MaskedColumn):
+            self_data = ma.asarray(data.data, dtype=dtype)
+            if description is None:
+                description = data.description
+            if units is None:
+                units = units or data.units
+            if format is None:
+                format = data.format
+            if meta is None:
+                meta = deepcopy(data.meta)
         else:
-            out = repr(self.data)
-        return out
+            self_data = ma.asarray(data, dtype=dtype)
 
-    def attrs_equal(self, col):
-        """Compare the column attributes of ``col`` to this object.
+        self = self_data.view(cls)
+        self._name = name
+        self.units = units
+        self.format = format
+        self.description = description
+        self.parent_table = None
 
-        The comparison attributes are: name, units, dtype, format, description,
-        and meta.
+        self.meta = OrderedDict()
+        if meta is not None:
+            self.meta.update(meta)
 
-        Parameters
-        ----------
-        col: Column
-            Comparison column
+        return self
 
-        Returns
-        -------
-        equal: boolean
-            True if all attributes are equal
+    @property
+    def data(self):
+        return self.view(ma.MaskedArray)
+
+    def copy(self, data=None, copy_data=True):
+        """Return a copy of the current Column instance.
         """
-        if not isinstance(col, Column):
-            raise ValueError('Comparison `col` must be a Column object')
+        if data is None:
+            data = self.view(ma.MaskedArray)
+            if copy_data:
+                data = data.copy()
 
-        attrs = ('name', 'units', 'dtype', 'format', 'description', 'meta')
-        equal = all(getattr(self, x) == getattr(col, x) for x in attrs)
-
-        return equal
-
-    def pformat(self, max_lines=None, show_name=True, show_units=False):
-        """Return a list of formatted string representation of column values.
-
-        If no value of `max_lines` is supplied then the height of the screen
-        terminal is used to set `max_lines`.  If the terminal height cannot be
-        determined then the default will be determined using the
-        `astropy.table.pprint.MAX_LINES` configuration item. If a negative
-        value of `max_lines` is supplied then there is no line limit applied.
-
-        Parameters
-        ----------
-        max_lines : int
-            Maximum lines of output (header + data rows)
-
-        show_name : bool
-            Include column name (default=True)
-
-        show_units : bool
-            Include a header row for units (default=False)
-
-        Returns
-        -------
-        lines : list
-            List of lines with header and formatted column values
-
-        """
-        lines, n_header = _pformat_col(self, max_lines, show_name, show_units)
-        return lines
-
-    def pprint(self, max_lines=None, show_name=True, show_units=False):
-        """Print a formatted string representation of column values.
-
-        If no value of `max_lines` is supplied then the height of the screen
-        terminal is used to set `max_lines`.  If the terminal height cannot be
-        determined then the default will be determined using the
-        `astropy.table.pprint.MAX_LINES` configuration item. If a negative
-        value of `max_lines` is supplied then there is no line limit applied.
-
-        Parameters
-        ----------
-        max_lines : int
-            Maximum number of values in output
-
-        show_name : bool
-            Include column name (default=True)
-
-        show_units : bool
-            Include a header row for units (default=False)
-        """
-        lines, n_header = _pformat_col(self, max_lines, show_name, show_units)
-        for i, line in enumerate(lines):
-            if i < n_header:
-                color_print(line, 'red')
-            else:
-                print line
-
-    def more(self, max_lines=None, show_name=True, show_units=False):
-        """Interactively browse column with a paging interface.
-
-        Supported keys::
-
-          f, <space> : forward one page
-          b : back one page
-          r : refresh same page
-          n : next row
-          p : previous row
-          < : go to beginning
-          > : go to end
-          q : quit browsing
-          h : print this help
-
-        Parameters
-        ----------
-        max_lines : int
-            Maximum number of lines in table output
-
-        show_name : bool
-            Include a header row for column names (default=True)
-
-        show_units : bool
-            Include a header row for units (default=False)
-
-        """
-        _more_tabcol(self, max_lines=max_lines, show_name=show_name,
-                     show_units=show_units)
-
-    def __str__(self):
-        lines, n_header = _pformat_col(self)
-        return '\n'.join(lines)
+        return MaskedColumn(self.name, data, units=self.units, format=self.format,
+                      description=self.description, meta=deepcopy(self.meta))
 
 
 class Row(object):
@@ -466,6 +525,8 @@ class Table(object):
     ----------
     data : numpy ndarray, dict, list, or Table, optional
         Data to initialize table.
+    mask : numpy ndarray, dict, list, optional
+        The mask to initialize the table
     names : list, optional
         Specify column names
     dtypes : list, optional
@@ -477,8 +538,8 @@ class Table(object):
 
     """
 
-    def __init__(self, data=None, names=None, dtypes=None, meta=None,
-                 copy=True):
+    def __init__(self, data=None, mask=None, names=None, dtypes=None,
+                 meta=None, copy=True):
 
         # Set up a placeholder empty table
         self._data = None
@@ -869,6 +930,12 @@ class Table(object):
             return 0
         else:
             return len(self._data)
+
+    def create_mask(self):
+        if isinstance(self._data, ma.MaskedArray):
+            raise Exception("data array is already masked")
+        else:
+            self._data = ma.array(self._data)
 
     def index_column(self, name):
         """
