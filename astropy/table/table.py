@@ -689,15 +689,14 @@ class Table(object):
 
         # Set self.masked appropriately, then get class to create column instances.
         self._set_masked_from_cols(data)
-        ColumnClass = MaskedColumn if self.masked else Column
 
         cols = []
         def_names = _auto_names(n_cols)
         for col, name, def_name, dtype in zip(data, names, def_names, dtypes):
             if isinstance(col, (Column, MaskedColumn)):
-                col = ColumnClass((name or col.name), col, dtype=dtype)
+                col = self.ColumnClass((name or col.name), col, dtype=dtype)
             elif isinstance(col, np.ndarray) or isiterable(col):
-                col = ColumnClass((name or def_name), col, dtype=dtype)
+                col = self.ColumnClass((name or def_name), col, dtype=dtype)
             else:
                 raise ValueError('Elements in list initialization must be '
                                  'either Column or list-like')
@@ -717,7 +716,6 @@ class Table(object):
 
         # Set self.masked appropriately, then get class to create column instances.
         self._set_masked_from_cols(cols)
-        ColumnClass = MaskedColumn if self.masked else Column
 
         if copy:
             self._init_from_list(cols, names, dtypes, n_cols, copy)
@@ -727,7 +725,7 @@ class Table(object):
             columns = TableColumns()
 
             for name in names:
-                columns[name] = ColumnClass(name, self._data[name])
+                columns[name] = self.ColumnClass(name, self._data[name])
                 columns[name].parent_table = self
             self.columns = columns
 
@@ -769,8 +767,7 @@ class Table(object):
                              .format(lengths))
 
         self._set_masked_from_cols(cols)
-        ColumnClass = MaskedColumn if self.masked else Column
-        cols = [ColumnClass(col.name, col) for col in cols]
+        cols = [self.ColumnClass(col.name, col) for col in cols]
 
         names = [col.name for col in cols]
         dtypes = [col.descr for col in cols]
@@ -998,6 +995,17 @@ class Table(object):
                 self._masked = masked
             else:
                 raise ValueError("masked should be one of True, False, None")
+        if self._masked:
+            self._column_class = MaskedColumn
+        else:
+            self._column_class = Column
+
+    @property
+    def ColumnClass(self):
+        if self._column_class is None:
+            return Column
+        else:
+            return self._column_class
 
     @property
     def dtype(self):
@@ -1263,8 +1271,7 @@ class Table(object):
         # Add_row() probably corrupted the Column views of self._data.  Rebuild
         # self.columns.  Col.copy() takes an optional data reference that it
         # uses in the copy.
-        ColumnClass = MaskedColumn if self.masked else Column
-        cols = [ColumnClass.copy(ColumnClass(c.name, c), self._data[c.name]) for c in self.columns.values()]
+        cols = [self.ColumnClass(c.name, c).copy(self._data[c.name]) for c in self.columns.values()]
         self.columns = TableColumns(cols)
 
     def sort(self, keys):
