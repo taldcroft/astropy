@@ -341,6 +341,8 @@ class Column(BaseColumn, np.ndarray):
                 format = data.format
             if meta is None:
                 meta = deepcopy(data.meta)
+        elif isinstance(data, MaskedColumn):
+            raise TypeError("Cannot convert a MaskedColumn to a Column")
         else:
             self_data = np.asarray(data, dtype=dtype)
 
@@ -673,6 +675,9 @@ class Table(object):
                 self.masked = True
             else:
                 self.masked = False
+        elif not self.masked:
+            if any(isinstance(col, (MaskedColumn, ma.MaskedArray)) for col in cols):
+                self.masked = True
 
     def _init_from_list(self, data, names, dtypes, n_cols, copy):
         """Initialize table from a list of columns.  A column can be a
@@ -761,6 +766,10 @@ class Table(object):
         if len(lengths) != 1:
             raise ValueError('Inconsistent data column lengths: {0}'
                              .format(lengths))
+
+        self._set_masked_from_cols(cols)
+        ColumnClass = MaskedColumn if self.masked else Column
+        cols = [ColumnClass(col.name, col) for col in cols]
 
         names = [col.name for col in cols]
         dtypes = [col.descr for col in cols]
@@ -972,8 +981,14 @@ class Table(object):
 
     @masked.setter
     def masked(self, masked):
-        if hasattr(self, '_masked') and self._masked in [True, False]:
-            raise Exception("Cannot change masked attribute once it is set to True or False")
+        if hasattr(self, '_masked'):
+            # The only allowed change is from None to False or True, or False to True
+            if self._masked is None and masked in [False, True] or self._masked is False and masked is True:
+                self._masked = masked
+            elif self._masked is masked:
+                raise Exception("Masked attribute is already set to {0}".format(masked))
+            else:
+                raise Exception("Cannot change masked attribute to {0} once it is set to {1}".format(masked, self._masked))
         else:
             if masked in [True, False, None]:
                 self._masked = masked
