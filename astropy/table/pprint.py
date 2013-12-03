@@ -198,7 +198,7 @@ def _pformat_col_iter(col, max_lines, show_name, show_unit, outs):
             col_name = col.name + ' [{0}]'.format(
                 ','.join(six.text_type(n) for n in multidims))
         else:
-            col_name = col.name
+            col_name = str(col.name)
         n_header += 1
         yield col_name
     if show_unit:
