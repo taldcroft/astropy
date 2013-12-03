@@ -540,7 +540,7 @@ class Column(BaseColumn, np.ndarray):
         return out
 
 
-class MaskedColumn(BaseColumn, ma.MaskedArray):
+class MaskedColumn(Column, ma.MaskedArray):
     """Define a masked data column for use in a Table object.
 
     Parameters
@@ -632,45 +632,14 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
                 description=None, unit=None, format=None, meta=None,
                 units=None, dtypes=None):
 
-        if dtypes is not None:
-            dtype = dtypes
-            warnings.warn("'dtypes' has been renamed to the singular 'dtype'.",
-                          AstropyDeprecationWarning)
+        self_data = Column(data, name=name, dtype=dtype, shape=shape, length=length,
+                           description=description, unit=unit, format=format, meta=meta)
+        self = ma.MaskedArray.__new__(cls, data=self_data, mask=mask)
 
-        if units is not None:
-            unit = units
-            warnings.warn("'units' has been renamed to the singular 'unit'.",
-                          AstropyDeprecationWarning)
-
-        if data is None:
-            dtype = (np.dtype(dtype).str, shape)
-            self_data = ma.zeros(length, dtype=dtype)
-        elif isinstance(data, (Column, MaskedColumn)):
-            self_data = ma.asarray(data.data, dtype=dtype)
-            if description is None:
-                description = data.description
-            if unit is None:
-                unit = unit or data.unit
-            if format is None:
-                format = data.format
-            if meta is None:
-                meta = deepcopy(data.meta)
-            if name is None:
-                name = data.name
-        elif isinstance(data, Quantity):
-            if unit is None:
-                self_data = ma.asarray(data, dtype=dtype)
-                unit = data.unit
-            else:
-                self_data = ma.asarray(data.to(unit), dtype=dtype)
-        else:
-            self_data = ma.asarray(data, dtype=dtype)
-
-        self = self_data.view(MaskedColumn)
-        if mask is None and hasattr(data, 'mask'):
-            mask = data.mask
-        if fill_value is None and hasattr(data, 'fill_value'):
-            fill_value = data.fill_value
+        # if mask is None and hasattr(data, 'mask'):
+        #     mask = data.mask
+        # if fill_value is None and hasattr(data, 'fill_value'):
+        #    fill_value = data.fill_value
         self.mask = mask
         self.fill_value = fill_value
         self._name = name
@@ -683,8 +652,8 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
         return self
 
     def __array_finalize__(self, obj):
-        BaseColumn.__array_finalize__(self, obj)
         ma.MaskedArray.__array_finalize__(self, obj)
+        Column.__array_finalize__(self, obj)
 
     def _fix_fill_value(self, val):
         """Fix a fill value (if needed) to work around a bug with setting the fill
