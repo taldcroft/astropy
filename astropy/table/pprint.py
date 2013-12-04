@@ -190,10 +190,10 @@ def _pformat_col_iter(col, max_lines, show_name, show_unit, outs):
     if show_name:
         i_centers.append(n_header)
         if multidims:
-            col_name = col.name + ' [{0}]'.format(
+            col_name = str(col.name) + ' [{0}]'.format(
                 ','.join(str(n) for n in multidims))
         else:
-            col_name = col.name
+            col_name = str(col.name)
         n_header += 1
         yield col_name
     if show_unit:

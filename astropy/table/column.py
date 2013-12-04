@@ -632,22 +632,27 @@ class MaskedColumn(Column, ma.MaskedArray):
                 description=None, unit=None, format=None, meta=None,
                 units=None, dtypes=None):
 
-        self_data = Column(data, name=name, dtype=dtype, shape=shape, length=length,
-                           description=description, unit=unit, format=format, meta=meta)
-        self = ma.MaskedArray.__new__(cls, data=self_data, mask=mask)
 
-        # if mask is None and hasattr(data, 'mask'):
-        #     mask = data.mask
-        # if fill_value is None and hasattr(data, 'fill_value'):
-        #    fill_value = data.fill_value
-        self.mask = mask
-        self.fill_value = fill_value
-        self._name = name
-        self.unit = unit
-        self.format = format
-        self.description = description
+        if dtypes is not None:
+            dtype = dtypes
+            warnings.warn("'dtypes' has been renamed to the singular 'dtype'.",
+                          AstropyDeprecationWarning)
+
+        if units is not None:
+            unit = units
+            warnings.warn("'units' has been renamed to the singular 'unit'.",
+                          AstropyDeprecationWarning)
+
+        if mask is None and hasattr(data, 'mask'):
+            mask = data.mask
+        if fill_value is None and hasattr(data, 'fill_value'):
+            fill_value = data.fill_value
+
+        self_data = Column(data, dtype=dtype, shape=shape, length=length, name=name,
+                           unit=unit, format=format, description=description, meta=meta)
+        self = ma.MaskedArray.__new__(cls, data=self_data, mask=mask, fill_value=fill_value)
+
         self.parent_table = None
-        self.meta = meta
 
         return self
 
