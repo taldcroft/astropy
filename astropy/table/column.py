@@ -73,8 +73,6 @@ def _column_compare(op):
 
 class BaseColumn(np.ndarray):
 
-    #    __metaclass__ = abc.ABCMeta
-
     meta = MetaData()
 
     # Define comparison operators
@@ -89,8 +87,7 @@ class BaseColumn(np.ndarray):
     def __new__(cls, data=None, name=None,
                 dtype=None, shape=(), length=0,
                 description=None, unit=None, format=None, meta=None,
-                dtypes=None, units=None,
-                convert_masked=False):
+                dtypes=None, units=None):
 
         if dtypes is not None:
             dtype = dtypes
@@ -106,8 +103,6 @@ class BaseColumn(np.ndarray):
             dtype = (np.dtype(dtype).str, shape)
             self_data = np.zeros(length, dtype=dtype)
         elif isinstance(data, BaseColumn):
-            if isinstance(data, MaskedColumn) and not convert_masked:
-                raise TypeError("Cannot convert a MaskedColumn to a Column")
             self_data = np.asarray(data.data, dtype=dtype)
             if description is None:
                 description = data.description
@@ -525,6 +520,21 @@ class Column(BaseColumn):
        allowing for ``c = Column([1, 2], 'c')``.
     """
 
+    @_check_column_new_args
+    def __new__(cls, data=None, name=None,
+                dtype=None, shape=(), length=0,
+                description=None, unit=None, format=None, meta=None,
+                dtypes=None, units=None):
+
+        if isinstance(data, MaskedColumn):
+            raise TypeError("Cannot convert a MaskedColumn to a Column")
+
+        self = super(Column, cls).__new__(cls, data=data, name=name, dtype=dtype,
+                                          shape=shape, length=length, description=description,
+                                          unit=unit, format=format, meta=meta,
+                                          dtypes=dtypes, units=units)
+        return self
+
     def __str__(self):
         lines, n_header = _pformat_col(self)
         return '\n'.join(lines)
@@ -632,16 +642,6 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
                 description=None, unit=None, format=None, meta=None,
                 units=None, dtypes=None):
 
-        if dtypes is not None:
-            dtype = dtypes
-            warnings.warn("'dtypes' has been renamed to the singular 'dtype'.",
-                          AstropyDeprecationWarning)
-
-        if units is not None:
-            unit = units
-            warnings.warn("'units' has been renamed to the singular 'unit'.",
-                          AstropyDeprecationWarning)
-
         if mask is None and hasattr(data, 'mask'):
             mask = data.mask
         else:
@@ -649,9 +649,17 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
         if fill_value is None and hasattr(data, 'fill_value'):
             fill_value = data.fill_value
 
+        # Create self using MaskedArray as a wrapper class, following the example of
+        # class MSubArray in
+        # https://github.com/numpy/numpy/blob/maintenance/1.8.x/numpy/ma/tests/test_subclassing.py
+        # This pattern makes it so that __array_finalize__ is called as expected (e.g. #1471 and
+        # https://github.com/astropy/astropy/commit/ff6039e8)
+
+        # First just pass through all args and kwargs to BaseColumn, then wrap that object
+        # with MaskedArray.
         self_data = BaseColumn(data, dtype=dtype, shape=shape, length=length, name=name,
                                unit=unit, format=format, description=description, meta=meta,
-                               convert_masked=True)
+                               units=units, dtypes=dtypes)
         self = ma.MaskedArray.__new__(cls, data=self_data, mask=mask, fill_value=fill_value)
 
         self.parent_table = None
