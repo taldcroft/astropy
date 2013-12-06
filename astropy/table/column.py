@@ -90,7 +90,8 @@ class BaseColumn(np.ndarray):
     def __new__(cls, data=None, name=None,
                 dtype=None, shape=(), length=0,
                 description=None, unit=None, format=None, meta=None,
-                dtypes=None, units=None):
+                dtypes=None, units=None,
+                convert_masked=False):
 
         if dtypes is not None:
             dtype = dtypes
@@ -105,7 +106,9 @@ class BaseColumn(np.ndarray):
         if data is None:
             dtype = (np.dtype(dtype).str, shape)
             self_data = np.zeros(length, dtype=dtype)
-        elif isinstance(data, Column):
+        elif isinstance(data, BaseColumn):
+            if isinstance(data, MaskedColumn) and not convert_masked:
+                raise TypeError("Cannot convert a MaskedColumn to a Column")
             self_data = np.asarray(data.data, dtype=dtype)
             if description is None:
                 description = data.description
@@ -117,8 +120,6 @@ class BaseColumn(np.ndarray):
                 meta = deepcopy(data.meta)
             if name is None:
                 name = data.name
-        elif isinstance(data, MaskedColumn):
-            raise TypeError("Cannot convert a MaskedColumn to a Column")
         elif isinstance(data, Quantity):
             if unit is None:
                 self_data = np.asarray(data, dtype=dtype)
@@ -648,8 +649,9 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
         if fill_value is None and hasattr(data, 'fill_value'):
             fill_value = data.fill_value
 
-        self_data = BaseColumn(np.asarray(data), dtype=dtype, shape=shape, length=length, name=name,
-                           unit=unit, format=format, description=description, meta=meta)
+        self_data = BaseColumn(data, dtype=dtype, shape=shape, length=length, name=name,
+                               unit=unit, format=format, description=description, meta=meta,
+                               convert_masked=True)
         self = ma.MaskedArray.__new__(cls, data=self_data, mask=mask, fill_value=fill_value)
 
         self.parent_table = None
