@@ -440,6 +440,14 @@ class BaseColumn(np.ndarray):
         elif hasattr(self, '_groups'):
             out._groups = groups.ColumnGroups(out, indices=self._groups._indices)
 
+    # Strip off the BaseColumn-ness for repr and str so that MaskedColumn.data __repr__
+    # does not include masked_BaseColumn(data = [1 2], ...).
+    def __repr__(self):
+        return np.asarray(self).__repr__()
+
+    def __str__(self):
+        return np.asarray(self).__str__()
+
 
 class Column(BaseColumn):
     """Define a data column for use in a Table object.
