@@ -1,6 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import abc
 import functools
 import operator
 
@@ -633,7 +632,6 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
                 description=None, unit=None, format=None, meta=None,
                 units=None, dtypes=None):
 
-
         if dtypes is not None:
             dtype = dtypes
             warnings.warn("'dtypes' has been renamed to the singular 'dtype'.",
@@ -646,6 +644,8 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
 
         if mask is None and hasattr(data, 'mask'):
             mask = data.mask
+        else:
+            mask = deepcopy(mask)
         if fill_value is None and hasattr(data, 'fill_value'):
             fill_value = data.fill_value
 
