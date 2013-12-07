@@ -157,6 +157,8 @@ class BaseColumn(np.ndarray):
         if obj is None:
             return
 
+        if callable(super(BaseColumn, self).__array_finalize__):
+            super(BaseColumn, self).__array_finalize__(obj)
         # Self was created from template (e.g. obj[slice] or (obj * 2))
         # or viewcast e.g. obj.view(Column).  In either case we want to
         # init Column attributes for self from obj if possible.
@@ -445,9 +447,6 @@ class BaseColumn(np.ndarray):
     def __repr__(self):
         return np.asarray(self).__repr__()
 
-    def __str__(self):
-        return np.asarray(self).__str__()
-
 
 class Column(BaseColumn):
     """Define a data column for use in a Table object.
@@ -673,10 +672,6 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
         self.parent_table = None
 
         return self
-
-    def __array_finalize__(self, obj):
-        ma.MaskedArray.__array_finalize__(self, obj)
-        BaseColumn.__array_finalize__(self, obj)
 
     def _fix_fill_value(self, val):
         """Fix a fill value (if needed) to work around a bug with setting the fill
