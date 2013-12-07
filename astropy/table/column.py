@@ -142,7 +142,7 @@ class BaseColumn(np.ndarray):
         then a view (reference) of ``data`` is used, and ``copy_data`` is ignored.
         """
         if data is None:
-            data = self.view(super(BaseColumn, self).__class__)
+            data = self.data
             if copy_data:
                 data = data.copy(order)
 
@@ -766,4 +766,9 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
             repr(self.name), repr(unit),
             repr(self.format), repr(self.description), repr(self.data))
 
+        return out
+
+    def copy(self, *args, **kwargs):
+        out = super(MaskedColumn, self).copy(*args, **kwargs)
+        out.fill_value = self.fill_value
         return out
