@@ -142,11 +142,11 @@ class BaseColumn(np.ndarray):
         then a view (reference) of ``data`` is used, and ``copy_data`` is ignored.
         """
         if data is None:
-            data = self.view(np.ndarray)
+            data = self.view(super(BaseColumn, self).__class__)
             if copy_data:
                 data = data.copy(order)
 
-        out = Column(name=self.name, data=data, unit=self.unit, format=self.format,
+        out = self.__class__(name=self.name, data=data, unit=self.unit, format=self.format,
                      description=self.description, meta=deepcopy(self.meta))
         self._copy_groups(out)
 
@@ -752,36 +752,6 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
         data = super(MaskedColumn, self).filled(fill_value)
         out = Column(name=self.name, data=data, unit=self.unit, format=self.format,
                      description=self.description, meta=deepcopy(self.meta))
-        return out
-
-    def copy(self, order='C', data=None, copy_data=True):
-        """
-        Return a copy of the current MaskedColumn instance.  If ``data`` is supplied
-        then a view (reference) of ``data`` is used, and ``copy_data`` is ignored.
-
-        Parameters
-        ----------
-        data : array; optional
-            Data to use when creating MaskedColumn copy.  If not supplied the
-            column data array is used.
-        copy_data : bool; optional
-            Make a copy of input data instead of using a reference (default=True)
-
-        Returns
-        -------
-        column : MaskedColumn
-            A copy of ``self``
-        """
-        if data is None:
-            data = self.view(ma.MaskedArray)
-            if copy_data:
-                data = data.copy(order)
-
-        out = MaskedColumn(name=self.name, data=data, unit=self.unit, format=self.format,
-                           # Do not include mask=self.mask since `data` has the mask
-                           fill_value=self.fill_value,
-                           description=self.description, meta=deepcopy(self.meta))
-        self._copy_groups(out)
         return out
 
     def __str__(self):
