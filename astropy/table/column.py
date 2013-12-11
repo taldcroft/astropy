@@ -597,7 +597,7 @@ class Column(BaseColumn):
         __str__ = __bytes__
 
 
-class MaskedColumn(BaseColumn, ma.MaskedArray):
+class MaskedColumn(Column, ma.MaskedArray):
     """Define a masked data column for use in a Table object.
 
     Parameters
@@ -793,28 +793,3 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
         out = Column(name=self.name, data=data, unit=self.unit, format=self.format,
                      description=self.description, meta=deepcopy(self.meta))
         return out
-
-    def __repr__(self):
-        unit = None if self.unit is None else six.text_type(self.unit)
-        out = "<{0} name={1} unit={2} format={3} " \
-            "description={4}>\n{5}".format(
-            self.__class__.__name__,
-            repr(self.name), repr(unit),
-            repr(self.format), repr(self.description), repr(self.data))
-
-        return out
-
-    def __unicode__(self):
-        lines, n_header = _pformat_col(self)
-        return '\n'.join(lines)
-    if six.PY3:
-        __str__ = __unicode__
-
-    def __bytes__(self):
-        return six.text_type(self).encode('utf-8')
-    if six.PY2:
-        __str__ = __bytes__
-
-#    def copy(self, *args, **kwargs):
-#        out = super(MaskedColumn, self).copy(*args, **kwargs)
-#        return out
