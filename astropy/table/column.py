@@ -72,13 +72,8 @@ def _column_compare(op):
     return compare
 
 
-<<<<<<< HEAD
-@six.add_metaclass(abc.ABCMeta)
-class BaseColumn(object):
-=======
 class BaseColumn(np.ndarray):
 
->>>>>>> Squashed commits for masked column pattern change
     meta = MetaData()
 
     # Define comparison operators
@@ -130,7 +125,7 @@ class BaseColumn(np.ndarray):
             self_data = np.asarray(data, dtype=dtype)
 
         self = self_data.view(cls)
-        self._name = name
+        self._name = fix_column_name(name)
         self.unit = unit
         self.format = format
         self.description = description
@@ -249,19 +244,6 @@ class BaseColumn(np.ndarray):
         """
         return (self.name, self.dtype.str, self.shape[1:])
 
-<<<<<<< HEAD
-    def __repr__(self):
-        unit = None if self.unit is None else six.text_type(self.unit)
-        out = "<{0} name={1} unit={2} format={3} " \
-            "description={4}>\n{5}".format(
-            self.__class__.__name__,
-            repr(self.name), repr(unit),
-            repr(self.format), repr(self.description), repr(self.data))
-
-        return out
-
-=======
->>>>>>> Squashed commits for masked column pattern change
     def iter_str_vals(self):
         """
         Return an iterator that yields the string-formatted values of this
@@ -454,20 +436,6 @@ class BaseColumn(np.ndarray):
             new_unit, self.data, equivalencies=equivalencies)
         self.unit = new_unit
 
-<<<<<<< HEAD
-    def __unicode__(self):
-        lines, n_header = _pformat_col(self)
-        return '\n'.join(lines)
-    if six.PY3:
-        __str__ = __unicode__
-
-    def __bytes__(self):
-        return six.text_type(self).encode('utf-8')
-    if six.PY2:
-        __str__ = __bytes__
-
-=======
->>>>>>> Squashed commits for masked column pattern change
     @property
     def groups(self):
         if not hasattr(self, '_groups'):
@@ -607,12 +575,8 @@ class Column(BaseColumn):
                                           dtypes=dtypes, units=units)
         return self
 
-    def __str__(self):
-        lines, n_header = _pformat_col(self)
-        return '\n'.join(lines)
-
     def __repr__(self):
-        unit = None if self.unit is None else str(self.unit)
+        unit = None if self.unit is None else six.text_type(self.unit)
         out = "<{0} name={1} unit={2} format={3} " \
             "description={4}>\n{5}".format(
             self.__class__.__name__,
@@ -620,6 +584,17 @@ class Column(BaseColumn):
             repr(self.format), repr(self.description), repr(self.data))
 
         return out
+
+    def __unicode__(self):
+        lines, n_header = _pformat_col(self)
+        return '\n'.join(lines)
+    if six.PY3:
+        __str__ = __unicode__
+
+    def __bytes__(self):
+        return six.text_type(self).encode('utf-8')
+    if six.PY2:
+        __str__ = __bytes__
 
 
 class MaskedColumn(BaseColumn, ma.MaskedArray):
@@ -819,12 +794,8 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
                      description=self.description, meta=deepcopy(self.meta))
         return out
 
-    def __str__(self):
-        lines, n_header = _pformat_col(self)
-        return '\n'.join(lines)
-
     def __repr__(self):
-        unit = None if self.unit is None else str(self.unit)
+        unit = None if self.unit is None else six.text_type(self.unit)
         out = "<{0} name={1} unit={2} format={3} " \
             "description={4}>\n{5}".format(
             self.__class__.__name__,
@@ -832,6 +803,17 @@ class MaskedColumn(BaseColumn, ma.MaskedArray):
             repr(self.format), repr(self.description), repr(self.data))
 
         return out
+
+    def __unicode__(self):
+        lines, n_header = _pformat_col(self)
+        return '\n'.join(lines)
+    if six.PY3:
+        __str__ = __unicode__
+
+    def __bytes__(self):
+        return six.text_type(self).encode('utf-8')
+    if six.PY2:
+        __str__ = __bytes__
 
 #    def copy(self, *args, **kwargs):
 #        out = super(MaskedColumn, self).copy(*args, **kwargs)
