@@ -87,15 +87,16 @@ These same attributes can be used to access the data in the frames, as
 
 You can use the ``preferred_representation`` attribute in conjunction
 with the ``preferred_attr_names`` attribute to figure out what keywords
-are accepted by a particular class.  The former will be the
-representation  class the system is typically expressed in (e.g.,
+are accepted by a particular class object.  The former will be the
+representation class the system is typically expressed in (e.g.,
 spherical for equatorial frames), and the latter will be a dictionary
 mapping names for that frame to the attribute name on the representation
 class::
-
-    >>> ICRS.preferred_representation
+    >>> from astropy import units as u
+    >>> icrs = ICRS(0*u.deg, 0*u.deg)
+    >>> icrs.preferred_representation
     <class 'astropy.coordinates.representation.SphericalRepresentation'>
-    >>> ICRS.preferred_attr_names
+    >>> icrs.preferred_attr_names
     OrderedDict([(u'ra', u'lon'), (u'dec', u'lat'), (u'distance', u'distance')])
 
 
