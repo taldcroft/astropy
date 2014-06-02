@@ -18,7 +18,8 @@ from ..utils.exceptions import AstropyDeprecationWarning
 from .. import units as u
 from .transformations import TransformGraph
 from .representation import BaseRepresentation, CartesianRepresentation, \
-                            SphericalRepresentation, UnitSphericalRepresentation
+                            SphericalRepresentation, UnitSphericalRepresentation, \
+			    CylindricalRepresentation
 
 __all__ = ['BaseCoordinateFrame', 'frame_transform_graph', 'GenericFrame']
 
@@ -122,7 +123,19 @@ class BaseCoordinateFrame(object):
     @preferred_representation.setter
     def preferred_representation(self, value):
         # In reality do validation of `value` and allow string input
-        self._preferred_representation = value
+	rep_dict = {'spherical': SphericalRepresentation, 
+		    'cartesian': CartesianRepresentation, 		    
+                    'unitspherical': UnitSphericalRepresentation,
+                    'cylindrical': CylindricalRepresentation}
+
+        # If value is a string, parse it
+        if isinstance(value, basestring) and value.lower() in rep_dict:
+	    value = rep_dict[value.lower()]
+        # Converted to representation object, now check allowed representations
+        if value in self._representations:
+            self._preferred_representation = value
+        else:
+            raise ValueError('{0} is not a valid representation for {1}'.format(value, self.__class__))
 
     @property
     def preferred_attr_names(self):
