@@ -289,3 +289,25 @@ def test_is_frame_attr_default():
 
     assert c4.is_frame_attr_default('equinox')
     assert not c5.is_frame_attr_default('equinox')
+
+def test_preferred_representation():
+    """
+    Test the getter and setter properties for `preferred_representation`
+    """
+    from ..builtin_frames import ICRS
+
+    icrs = ICRS(ra=1*u.deg, dec=1*u.deg)
+    
+    assert icrs.preferred_representation == representation.SphericalRepresentation
+    assert repr(icrs) == '<ICRS Coordinate: ra=1.0 deg, dec=1.0 deg>'
+
+    icrs.preferred_representation = representation.CartesianRepresentation
+    
+    assert icrs.preferred_representation == representation.CartesianRepresentation
+    assert repr(icrs) == '<ICRS Coordinate: x=0.99969541351 , y=0.0174497483513 , z=0.0174524064373 >'
+
+    icrs.preferred_representation = 'spherical'
+
+    assert icrs.preferred_representation == representation.SphericalRepresentation
+    assert repr(icrs) == '<ICRS Coordinate: ra=1.0 deg, dec=1.0 deg>'
+
