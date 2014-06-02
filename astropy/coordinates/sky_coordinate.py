@@ -8,7 +8,7 @@ import re
 from ..utils.compat.misc import override__dir__
 from ..extern import six
 from ..extern.six.moves import zip
-from ..units import Unit, Quantity
+from ..units import Unit
 from .. import units as u
 
 from .angles import Latitude, Longitude
@@ -835,6 +835,9 @@ def _parse_coordinate_arg(coords, frame, units):
     attr_name_for_type = dict((attr_type, name) for name, attr_type in
                               frame.preferred_attr_names.items())
 
+    frame_attr_names = frame.preferred_attr_names.keys()
+    repr_attr_names = frame.preferred_attr_names.values()
+
     # Turn a single string into a list of strings for convenience
     if isinstance(coords, six.string_types):
         is_scalar = True
@@ -847,8 +850,6 @@ def _parse_coordinate_arg(coords, frame, units):
         if not coords.has_data:
             raise ValueError('Cannot initialize from a frame without coordinate data')
 
-        frame_attr_names = frame.preferred_attr_names.keys()
-        repr_attr_names = frame.preferred_attr_names.values()
         data = coords.data.represent_as(frame.preferred_representation)
 
         for frame_attr_name, repr_attr_name, unit in zip(frame_attr_names, repr_attr_names, units):
@@ -872,11 +873,9 @@ def _parse_coordinate_arg(coords, frame, units):
                 valid_kwargs[attr] = value
 
     elif isinstance(coords, BaseRepresentation):
-        # TODO: Generalize
-        sph_coords = coords.represent_as(SphericalRepresentation)
-        valid_kwargs[attr_name_for_type['lon']] = sph_coords.lon
-        valid_kwargs[attr_name_for_type['lat']] = sph_coords.lat
-        valid_kwargs[attr_name_for_type['distance']] = sph_coords.distance
+        data = coords.represent_as(frame.preferred_representation)
+        for frame_attr_name, repr_attr_name in zip(frame_attr_names, repr_attr_names):
+            valid_kwargs[frame_attr_name] = getattr(data, repr_attr_name)
 
     elif isinstance(coords, (collections.Sequence, np.ndarray)):
         # TODO: Generalize (might be difficult?)
