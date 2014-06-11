@@ -310,3 +310,58 @@ def test_altaz_attributes():
     aa3 = AltAz(1*u.deg, 2*u.deg, location=EarthLocation(0*u.deg,0*u.deg, 0*u.m))
     assert isinstance(aa3.location, EarthLocation)
 
+def test_preferred_representation():
+    """
+    Test the getter and setter properties for `representation`
+    """
+    from ..builtin_frames import ICRS
+
+    # Create the frame object.
+    icrs = ICRS(ra=1*u.deg, dec=1*u.deg)
+    data = icrs.data
+
+    # Create some representation objects.
+    icrs_cart = icrs.cartesian
+    icrs_spher = icrs.spherical
+
+    # Testing when `_representation` set to `CartesianRepresentation`.
+    icrs.representation = representation.CartesianRepresentation
+    
+    assert icrs.representation == representation.CartesianRepresentation
+    assert icrs_cart.x == icrs.x
+    assert icrs_cart.y == icrs.y
+    assert icrs_cart.z == icrs.z
+    assert icrs.data == data
+
+    # Testing that an ICRS object in CartesianRepresentation must not have spherical attributes.
+    for attr in ('ra', 'dec', 'distance'):
+        with pytest.raises(AttributeError) as err:
+            getattr(icrs, attr)
+        assert 'object has no attribute' in str(err)
+
+    # Testing when `_representation` set to `CylindricalRepresentation`.
+    icrs.representation = representation.CylindricalRepresentation
+
+    assert icrs.representation == representation.CylindricalRepresentation
+    assert icrs.data == data
+
+    # Testing setter input using text argument for spherical.
+    icrs.representation = 'spherical'
+
+    assert icrs.representation == representation.SphericalRepresentation
+    assert icrs_spher.lat == icrs.dec
+    assert icrs_spher.lon == icrs.ra
+    assert icrs_spher.distance == icrs.distance
+    assert icrs.data == data
+
+    # Testing that an ICRS object in SphericalRepresentation must not have cartesian attributes.
+    for attr in ('x', 'y', 'z'):
+        with pytest.raises(AttributeError) as err:
+            getattr(icrs, attr)
+        assert 'object has no attribute' in str(err)
+
+    # Testing setter input using text argument for cylindrical.
+    icrs.representation = 'cylindrical'
+
+    assert icrs.representation == representation.CylindricalRepresentation
+    assert icrs.data == data
