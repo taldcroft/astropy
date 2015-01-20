@@ -95,8 +95,11 @@ class FastBasic(object):
             try_float = {}
             try_string = {}
 
-        data = self.engine.read(try_int, try_float, try_string)
-        return Table(data, names=list(self.engine.get_names()))
+        data, comments = self.engine.read(try_int, try_float, try_string)
+        meta = {}
+        if comments:
+            meta['comments'] = comments
+        return Table(data, names=list(self.engine.get_names()), meta=meta)
 
     def check_header(self):
         if self.strict_names:
@@ -142,7 +145,6 @@ class FastCsv(FastBasic):
     :class:`FastBasic` simply raises an error.
     """
     _format_name = 'fast_csv'
-    _io_registry_suffix = '.csv'
     _description = 'Comma-separated values table using the fast C engine'
     _fast = True
     fill_extra_cols = True
@@ -206,7 +208,7 @@ class FastCommentedHeader(FastBasic):
         # Mimic CommentedHeader's behavior in which data_start
         # is relative to header_start if unspecified; see #2692
         if 'data_start' not in kwargs:
-            self.data_start = self.header_start
+            self.data_start = 0
 
     def _read_header(self):
         tmp = self.engine.source

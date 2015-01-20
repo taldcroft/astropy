@@ -73,9 +73,6 @@ within those files.
     To test any compiled C/Cython extensions, you must run ``python setup.py
     develop`` prior to running the py.test command-line script.  Otherwise,
     any tests that make use of these extensions will not succeed.
-    Similarly, in python 3, these tests will not run correctly in the source
-    code, because they need the `2to3
-    <https://docs.python.org/2/library/2to3.html>`_ tool to be run on them.
 
 You may specify a specific test file or directory at the command line::
 
@@ -842,7 +839,7 @@ The simplest way to generalize the example output is to use the ellipses
 
 This doctest expects an exception with a traceback, but the text of the
 traceback is skipped in the example output--only the first and last lines
-of the output are checked.  See the :mod:``doctest`` documentation for
+of the output are checked.  See the :mod:`doctest` documentation for
 more examples of skipping output.
 
 

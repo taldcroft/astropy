@@ -5,10 +5,6 @@
 
 import copy
 import gc
-import platform
-import sys
-
-from distutils import version
 
 import numpy as np
 
@@ -647,6 +643,32 @@ class TestAddRow(SetupData):
         assert len(t) == 3
         assert np.all(t.as_array() == t_copy.as_array())
 
+    def test_insert_table_row(self, table_types):
+        """
+        Light testing of Table.insert_row() method.  The deep testing is done via
+        the add_row() tests which calls insert_row(index=len(self), ...), so
+        here just test that the added index parameter is handled correctly.
+        """
+        self._setup(table_types)
+        row = (10, 40.0, 'x', [10, 20])
+        for index in range(-3, 4):
+            indices = np.insert(np.arange(3), index, 3)
+            t = table_types.Table([self.a, self.b, self.c, self.d])
+            t2 = t.copy()
+            t.add_row(row)  # By now we know this works
+            t2.insert_row(index, row)
+            for name in t.colnames:
+                if t[name].dtype.kind == 'f':
+                    assert np.allclose(t[name][indices], t2[name])
+                else:
+                    assert np.all(t[name][indices] == t2[name])
+
+        for index in (-4, 4):
+            t = table_types.Table([self.a, self.b, self.c, self.d])
+            with pytest.raises(IndexError):
+                t.insert_row(index, row)
+
+
 @pytest.mark.usefixtures('table_types')
 class TestTableColumn(SetupData):
 
@@ -1250,9 +1272,11 @@ def test_unicode_column_names(table_types):
 
 
 def test_unicode_content():
+    # If we don't have unicode literals then return
     if isinstance('', bytes):
         return
 
+    # Define unicode literals
     string_a = 'астрономическая питона'
     string_b = 'миллиарды световых лет'
 
@@ -1261,7 +1285,6 @@ def test_unicode_content():
          [string_b, 3]],
         names=('a', 'b'))
 
-    assert repr(string_a) in repr(a)
     assert string_a in six.text_type(a)
     # This only works because the coding of this file is utf-8, which
     # matches the default encoding of Table.__str__

@@ -94,7 +94,7 @@ because by that point you're likely to run out of physical memory anyways), but
 	that were built with the assumption that the .data attribute has all the data in-memory.
 	
 	In order to force the mmap to close either wait for the containing ``HDUList`` object to go 
-	out of scope, or manually call del ``hdul[0].data`` (this works so long as there are no other
+	out of scope, or manually call ``del hdul[0].data`` (this works so long as there are no other
 	references held to the data array).
 
 Working with FITS Headers
@@ -508,7 +508,7 @@ variables for the individual columns and without manually creating a
 
 Now you may write this new table HDU directly to a FITS file like so::
 
-    >>> hdu = fits.PrimaryHDU(n)
+    >>> tbhdu.writeto('table.fits')
 
 This shortcut will automatically create a minimal primary HDU with no data and
 prepend it to the table HDU to create a valid FITS file.  If you require

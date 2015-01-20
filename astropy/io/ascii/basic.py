@@ -16,6 +16,7 @@ import re
 import numpy as np
 
 from . import core
+from ...table.column import col_getattr
 
 class BasicHeader(core.BaseHeader):
     '''Basic table Header Reader
@@ -137,6 +138,13 @@ class CommentedHeader(Basic):
     header_class = CommentedHeaderHeader
     data_class = NoHeaderData
 
+    def write_header(self, lines, meta):
+        """
+        Write comment lines after, rather than before, the header.
+        """
+        self.header.write(lines)
+        self.header.write_comments(lines, meta)
+
 
 class TabHeaderSplitter(core.DefaultSplitter):
     '''Split lines on tab and do not remove whitespace'''
@@ -222,7 +230,6 @@ class Csv(Basic):
       2,38.12321,-88.1321,2.2,17.0
     """
     _format_name = 'csv'
-    _io_registry_suffix = '.csv'
     _io_registry_can_write = True
     _description = 'Comma-separated-values'
 
@@ -291,7 +298,7 @@ class RdbHeader(TabHeader):
         rdb_types = []
         for col in self.cols:
             # Check if dtype.kind is string or unicode.  See help(np.core.numerictypes)
-            rdb_type = 'S' if col.dtype.kind in ('S', 'U') else 'N'
+            rdb_type = 'S' if col_getattr(col, 'dtype').kind in ('S', 'U') else 'N'
             rdb_types.append(rdb_type)
 
         lines.append(self.splitter.join(rdb_types))

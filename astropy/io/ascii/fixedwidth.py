@@ -11,6 +11,7 @@ fixedwidth.py:
 from __future__ import absolute_import, division, print_function
 
 from ...extern.six.moves import zip
+from ...table.column import col_iter_str_vals, col_getattr
 
 from . import core
 from .core import InconsistentTableError, DefaultSplitter
@@ -80,6 +81,7 @@ class FixedWidthHeader(basic.BasicHeader):
     """
     splitter_class = FixedWidthHeaderSplitter
     position_line = None   # secondary header line position
+    set_of_position_line_characters = set(r'`~!#$%^&*-_+=\|":' + "'")
 
     def get_line(self, lines, index):
         for i, line in enumerate(self.process_lines(lines)):
@@ -133,6 +135,16 @@ class FixedWidthHeader(basic.BasicHeader):
                 # slice col_ends but expects inclusive col_ends on input (for
                 # more intuitive user interface).
                 line = self.get_line(lines, position_line)
+                if len(set(line) - set([self.splitter.delimiter, ' '])) != 1:
+                    raise InconsistentTableError('Position line should only contain delimiters and one other character, e.g. "--- ------- ---".')
+                    # The line above lies. It accepts white space as well.
+                    # We don't wnat to encourage using three different
+                    # characters, because that can cause ambiguities, but white
+                    # spaces are so common everywhere that practicality beats
+                    # purity here.
+                charset = self.set_of_position_line_characters.union(set([self.splitter.delimiter, ' ']))
+                if not set(line).issubset(charset):
+                    raise InconsistentTableError('Characters in position line must be part of {0}'.format(charset))
                 vals, self.col_starts, col_ends = self.get_fixedwidth_params(line)
                 self.col_ends = [x - 1 for x in col_ends]
 
@@ -205,29 +217,21 @@ class FixedWidthData(basic.BasicData):
     splitter_class = FixedWidthSplitter
 
     def write(self, lines):
-
-        self._set_fill_values(self.cols)
-        self._set_col_formats()
-        for col in self.cols:
-            col.str_vals = list(col.iter_str_vals())
-        self._replace_vals(self.cols)
-        col_str_iters = [col.str_vals for col in self.cols]
-
         vals_list = []
-        # Col iterator does the formatting defined above so each val is a string
-        # and vals is a tuple of strings for all columns of each row
+        col_str_iters = self.str_vals()
         for vals in zip(*col_str_iters):
             vals_list.append(vals)
 
         for i, col in enumerate(self.cols):
             col.width = max([len(vals[i]) for vals in vals_list])
             if self.header.start_line is not None:
-                col.width = max(col.width, len(col.name))
+                col.width = max(col.width, len(col_getattr(col, 'name')))
 
         widths = [col.width for col in self.cols]
 
         if self.header.start_line is not None:
-            lines.append(self.splitter.join([col.name for col in self.cols], widths))
+            lines.append(self.splitter.join([col_getattr(col, 'name') for col in self.cols],
+                                            widths))
 
         if self.header.position_line is not None:
             char = self.header.position_char

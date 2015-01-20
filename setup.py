@@ -17,8 +17,8 @@ builtins._ASTROPY_SETUP_ = True
 
 import astropy
 from astropy_helpers.setup_helpers import (
-    register_commands, adjust_compiler, get_package_info, get_debug_option,
-    is_distutils_display_option)
+    register_commands, adjust_compiler, get_package_info, get_debug_option)
+from astropy_helpers.distutils_helpers import is_distutils_display_option
 from astropy_helpers.git_helpers import get_git_devstr
 from astropy_helpers.version_helpers import generate_version_py
 
@@ -47,10 +47,6 @@ adjust_compiler(NAME)
 # Freeze build information in version.py
 generate_version_py(NAME, VERSION, RELEASE, get_debug_option(NAME))
 
-# Treat everything in scripts except README.rst as a script to be installed
-scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
-           if os.path.basename(fname) != 'README.rst']
-
 # Get configuration information from all of the various subpackages.
 # See the docstring for setup_helpers.update_package_files for more
 # details.
@@ -69,6 +65,16 @@ for hook in [('prereleaser', 'middle'), ('releaser', 'middle'),
     hook_func = 'astropy.utils.release:' + '_'.join(hook)
     entry_points[hook_ep] = ['%s = %s' % (hook_name, hook_func)]
 
+# Command-line scripts
+entry_points['console_scripts'] = [
+    'fits2bitmap = astropy.visualization.scripts.fits2bitmap:main',
+    'fitscheck = astropy.io.fits.scripts.fitscheck:main',
+    'fitsdiff = astropy.io.fits.scripts.fitsdiff:main',
+    'fitsheader = astropy.io.fits.scripts.fitsheader:main',
+    'samp_hub = astropy.vo.samp.hub_script:hub_script',
+    'volint = astropy.io.votable.volint:main',
+    'wcslint = astropy.wcs.wcslint:main',
+]
 
 setup_requires = ['numpy>=' + astropy.__minimum_numpy_version__]
 install_requires = ['numpy>=' + astropy.__minimum_numpy_version__]
@@ -81,7 +87,6 @@ if is_distutils_display_option():
 setup(name=NAME,
       version=VERSION,
       description='Community-developed python astronomy tools',
-      scripts=scripts,
       requires=['numpy'],  # scipy not required, but strongly recommended
       setup_requires=setup_requires,
       install_requires=install_requires,
@@ -107,7 +112,7 @@ setup(name=NAME,
       ],
       cmdclass=cmdclassd,
       zip_safe=False,
-      use_2to3=True,
+      use_2to3=False,
       entry_points=entry_points,
       **package_info
 )

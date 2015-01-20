@@ -14,6 +14,7 @@ import re
 
 from ...extern import six
 from . import core
+from ...table.column import col_getattr
 
 latexdicts = {'AA':  {'tabletype': 'table',
                       'header_start': r'\hline \hline', 'header_end': r'\hline',
@@ -114,10 +115,14 @@ class LatexHeader(core.BaseHeader):
             lines.append(r'\caption{' + self.latex['caption'] + '}')
         lines.append(self.header_start + r'{' + self.latex['col_align'] + r'}')
         add_dictval_to_list(self.latex, 'header_start', lines)
-        lines.append(self.splitter.join([x.name for x in self.cols]))
+        col_units = [col_getattr(col, 'unit') for col in self.cols]
+        lines.append(self.splitter.join(self.colnames))
+        units = dict((name, unit.to_string(format='latex_inline'))
+                     for name, unit in zip(self.colnames, col_units) if unit)
         if 'units' in self.latex:
-            lines.append(self.splitter.join([self.latex['units'].get(x.name, ' ')
-                                             for x in self.cols]))
+            units.update(self.latex['units'])
+        if units:
+            lines.append(self.splitter.join([units.get(name, ' ') for name in self.colnames]))
         add_dictval_to_list(self.latex, 'header_end', lines)
 
 
@@ -216,7 +221,8 @@ class Latex(core.BaseReader):
                                latexdict = {'units': {'mass': 'kg', 'speed': 'km/h'}})
 
             If the column has no entry in the ``units`` dictionary, it defaults
-            to ``' '``.
+            to the **unit** attribute of the column. If this attribute is not
+            specified (i.e. it is None), the unit will be written as ``' '``.
 
         Run the following code to see where each element of the
         dictionary is inserted in the LaTeX table::
@@ -335,10 +341,15 @@ class AASTexHeader(LatexHeader):
         add_dictval_to_list(self.latex, 'preamble', lines)
         if 'caption' in self.latex:
             lines.append(r'\tablecaption{' + self.latex['caption'] + '}')
-        tablehead = ' & '.join([r'\colhead{' + x.name + '}' for x in self.cols])
+        tablehead = ' & '.join([r'\colhead{' + name + '}' for name in self.colnames])
+        col_units = [col_getattr(col, 'unit') for col in self.cols]
+        units = dict((name, unit.to_string(format='latex_inline'))
+                     for name, unit in zip(self.colnames, col_units) if unit)
         if 'units' in self.latex:
-            tablehead += r'\\ ' + (self.splitter.join([self.latex[
-                                   'units'].get(x.name, ' ') for x in self.cols]))
+            units.update(self.latex['units'])
+        if units:
+            tablehead += r'\\ ' + self.splitter.join([units.get(name, ' ')
+                                                      for name in self.colnames])
         lines.append(r'\tablehead{' + tablehead + '}')
 
 

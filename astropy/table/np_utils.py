@@ -5,13 +5,14 @@ join():  Perform a database join of two numpy ndarrays.
 hstack(): Horizontally stack a list of numpy ndarrays.
 vstack(): Vertically stack a list of numpy ndarrays.
 
-Some code and inspriration taken from numpy.lib.recfunctions.join_by().
+Some code and inspiration taken from numpy.lib.recfunctions.join_by().
 Redistribution license restrictions apply.
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from ..extern import six
 from ..extern.six.moves import zip as izip
+from ..utils.decorators import deprecated
 
 from itertools import chain
 import collections
@@ -24,6 +25,10 @@ from ..utils import OrderedDict
 
 __all__ = ['join', 'hstack', 'vstack', 'TableMergeError']
 
+DEPRECATION_MESSAGE = ('The %(func)s %(obj_type)s is deprecated and may '
+                       'be removed in a future version. '
+                       'Contact the Astropy developers if you need '
+                       'continued support for this function.')
 
 class TableMergeError(ValueError):
     pass
@@ -163,6 +168,7 @@ def common_dtype(cols):
     return arr_common.dtype.str
 
 
+@deprecated('1.0', message=DEPRECATION_MESSAGE)
 def join(left, right, keys=None, join_type='inner',
          uniq_col_name='{col_name}_{table_name}',
          table_names=['1', '2'],
@@ -303,6 +309,7 @@ def _check_for_sequence_of_structured_arrays(arrays):
         raise ValueError('`arrays` arg must include at least one array')
 
 
+@deprecated('1.0', message=DEPRECATION_MESSAGE)
 def vstack(arrays, join_type='inner', col_name_map=None):
     """
     Stack structured arrays vertically (by rows)
@@ -412,6 +419,7 @@ def vstack(arrays, join_type='inner', col_name_map=None):
     return out
 
 
+@deprecated('1.0', message=DEPRECATION_MESSAGE)
 def hstack(arrays, join_type='exact', uniq_col_name='{col_name}_{table_name}',
            table_names=None, col_name_map=None):
     """
@@ -515,6 +523,7 @@ def hstack(arrays, join_type='exact', uniq_col_name='{col_name}_{table_name}',
     return out
 
 
+@deprecated('1.0', message=DEPRECATION_MESSAGE)
 def get_groups(table, keys):
     """
     Get groups for numpy structured array on specified keys.
@@ -542,7 +551,7 @@ def get_groups(table, keys):
     table = table.ravel()
     len_table = len(table)
 
-    # oined array dtype as a list of descr (name, type_str, shape) tuples
+    # joined array dtype as a list of descr (name, type_str, shape) tuples
     col_name_map = get_col_name_map([table], keys)
     out_descrs = get_descrs([table], col_name_map)
 

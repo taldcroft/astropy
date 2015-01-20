@@ -25,6 +25,7 @@ from ...extern.six.moves import cStringIO as StringIO
 from ...utils.exceptions import AstropyWarning
 
 from ...table import Table
+from ...table.column import col_getattr, col_setattr, col_iter_str_vals
 from ...utils.compat import ignored
 from ...utils.data import get_readable_fileobj
 from ...utils import OrderedDict
@@ -380,6 +381,7 @@ class BaseHeader(object):
     comment = None
     splitter_class = DefaultSplitter
     names = None
+    write_comment = False
     write_spacer_lines = ['ASCII_TABLE_WRITE_SPACER_LINE']
 
     def __init__(self):
@@ -392,8 +394,17 @@ class BaseHeader(object):
         """
         Extract any table-level metadata, e.g. keywords, comments, column metadata, from
         the table ``lines`` and update the OrderedDict ``meta`` in place.  This base
-        method does nothing.
+        method extracts comment lines and stores them in ``meta`` for output.
         """
+        if self.comment:
+            re_comment = re.compile(self.comment)
+            comment_lines = [x for x in lines if re_comment.match(x)]
+        else:
+            comment_lines = []
+        comment_lines = [re.sub('^' + self.comment, '', x).strip()
+                         for x in comment_lines]
+        if comment_lines:
+            meta.setdefault('table', {})['comments'] = comment_lines
 
     def get_cols(self, lines):
         """Initialize the header Column objects from the table ``lines``.
@@ -437,17 +448,23 @@ class BaseHeader(object):
             if line and (not self.comment or not re_comment.match(line)):
                 yield line
 
+    def write_comments(self, lines, meta):
+        if self.write_comment is not False:
+            for comment in meta.get('comments', []):
+                lines.append(self.write_comment + comment)
+
     def write(self, lines):
         if self.start_line is not None:
             for i, spacer_line in zip(range(self.start_line),
                                       itertools.cycle(self.write_spacer_lines)):
                 lines.append(spacer_line)
-            lines.append(self.splitter.join([x.name for x in self.cols]))
+            lines.append(self.splitter.join([col_getattr(x, 'name') for x in self.cols]))
 
     @property
     def colnames(self):
         """Return the column names of the table"""
-        return tuple(col.name for col in self.cols)
+        return tuple(col.name if isinstance(col, Column) else col_getattr(col, 'name')
+                     for col in self.cols)
 
     def get_type_map_key(self, col):
         return col.raw_type
@@ -625,6 +642,15 @@ class BaseData(object):
                     for i in col.mask.nonzero()[0]:
                         col.str_vals[i] = mask_val
 
+    def str_vals(self):
+        '''convert all values in table to a list of lists of strings'''
+        self._set_fill_values(self.cols)
+        self._set_col_formats()
+        for col in self.cols:
+            col.str_vals = list(col_iter_str_vals(col))
+        self._replace_vals(self.cols)
+        return [col.str_vals for col in self.cols]
+
     def write(self, lines):
         if hasattr(self.start_line, '__call__'):
             raise TypeError('Start_line attribute cannot be callable for write()')
@@ -634,12 +660,7 @@ class BaseData(object):
         while len(lines) < data_start_line:
             lines.append(itertools.cycle(self.write_spacer_lines))
 
-        self._set_fill_values(self.cols)
-        self._set_col_formats()
-        for col in self.cols:
-            col.str_vals = list(col.iter_str_vals())
-        self._replace_vals(self.cols)
-        col_str_iters = [col.str_vals for col in self.cols]
+        col_str_iters = self.str_vals()
         for vals in zip(*col_str_iters):
             lines.append(self.splitter.join(vals))
 
@@ -647,8 +668,8 @@ class BaseData(object):
         """
         """
         for col in self.cols:
-            if col.name in self.formats:
-                col.format = self.formats[col.name]
+            if col_getattr(col, 'name') in self.formats:
+                col_setattr(col, 'format', self.formats[col.name])
 
 
 def convert_numpy(numpy_type):
@@ -958,13 +979,17 @@ class BaseReader(object):
     def comment_lines(self):
         """Return lines in the table that match header.comment regexp"""
         if not hasattr(self, 'lines'):
-            raise ValueError('Table must be read prior to accessing the header_comment_lines')
+            raise ValueError('Table must be read prior to accessing the header comment lines')
         if self.header.comment:
             re_comment = re.compile(self.header.comment)
             comment_lines = [x for x in self.lines if re_comment.match(x)]
         else:
             comment_lines = []
         return comment_lines
+
+    def write_header(self, lines, meta):
+        self.header.write_comments(lines, meta)
+        self.header.write(lines)
 
     def write(self, table):
         """Write ``table`` as list of strings.
@@ -987,7 +1012,7 @@ class BaseReader(object):
 
         # Write header and data to lines list
         lines = []
-        self.header.write(lines)
+        self.write_header(lines, table.meta)
         self.data.write(lines)
 
         return lines
@@ -1104,7 +1129,7 @@ def _get_reader(Reader, Inputter=None, Outputter=None, **kwargs):
             # However, position_line is given as absolute number and not relative to header_start.
             # So, ignore this Reader here.
             if (('data_start' not in kwargs) and (default_header_length is not None)
-                    and reader._format_name != 'fixed_width_two_line'):
+                    and reader._format_name not in ['fixed_width_two_line', 'commented_header']):
                 reader.data.start_line = reader.header.start_line + default_header_length
         elif kwargs['header_start'] is not None:
             # User trying to set a None header start to some value other than None
