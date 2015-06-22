@@ -11,15 +11,10 @@ from ...extern import six
 from ..data_info import dtype_info_name
 from ...tests.helper import pytest
 
-STRING_TYPE_NAMES = {(False, 'S'): 'str',  # not PY3
-                     (False, 'U'): 'unicode',
-                     (True, 'S'): 'bytes', # PY3
-                     (True, 'U'): 'str'}
-
-DTYPE_TESTS = ((np.array(b'abcd').dtype, STRING_TYPE_NAMES[(six.PY3, 'S')] + '4'),
-               (np.array(u'abcd').dtype, STRING_TYPE_NAMES[(six.PY3, 'U')] + '4'),
-               ('S4', STRING_TYPE_NAMES[(six.PY3, 'S')] + '4'),
-               ('U4', STRING_TYPE_NAMES[(six.PY3, 'U')] + '4'),
+DTYPE_TESTS = ((np.array(b'abcd').dtype, 'bytes4' if six.PY3 else 'str4'),
+               (np.array(u'abcd').dtype, 'str4' if six.PY3 else 'unicode4'),
+               ('S4', 'bytes4' if six.PY3 else 'str4'),
+               ('U4', 'str4' if six.PY3 else 'unicode4'),
                (np.void, 'void'),
                (np.int32, 'int32'),
                (np.bool, 'bool'),
