@@ -114,6 +114,7 @@ class QuantityInfoBase(ParentDtypeInfo):
     # should not be considered a typical Quantity subclass by Table.
     attrs_from_parent = {'dtype', 'unit'}  # dtype and unit taken from parent
     _supports_indexing = True
+    mask_val = np.nan
 
     @staticmethod
     def default_format(val):
