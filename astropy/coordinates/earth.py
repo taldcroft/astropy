@@ -197,6 +197,14 @@ class EarthLocation(u.Quantity):
                                 .format(exc_geocentric, exc_geodetic))
         return self
 
+    @property
+    def mask(self):
+        raise AttributeError
+
+    @mask.setter
+    def mask(self, value):
+        pass
+
     @classmethod
     def from_geocentric(cls, x, y, z, unit=None):
         """

@@ -114,7 +114,6 @@ class QuantityInfoBase(ParentDtypeInfo):
     # should not be considered a typical Quantity subclass by Table.
     attrs_from_parent = {'dtype', 'unit'}  # dtype and unit taken from parent
     _supports_indexing = True
-    mask_val = np.nan
 
     @staticmethod
     def default_format(val):
@@ -144,6 +143,7 @@ class QuantityInfo(QuantityInfoBase):
     _represent_as_dict_attrs = ('value', 'unit')
     _construct_from_dict_args = ['value']
     _represent_as_dict_primary_data = 'value'
+    mask_val = np.nan
 
     def new_like(self, cols, length, metadata_conflicts='warn', name=None):
         """
@@ -852,13 +852,20 @@ class Quantity(np.ndarray, metaclass=InheritDocstrings):
     def __eq__(self, other):
         try:
             try:
-                return super().__eq__(other)
+                out = super().__eq__(other)
             except DeprecationWarning:
                 # We treat the DeprecationWarning separately, since it may
                 # mask another Exception.  But we do not want to just use
                 # np.equal, since super's __eq__ treats recarrays correctly.
-                return np.equal(self, other)
-        except UnitsError:
+                out = np.equal(self, other)
+
+            # Is it masked?
+            mask = np.isnan(self.value) | np.isnan(other.value)
+            if np.any(mask):
+                out = np.ma.array(out, mask=mask, copy=False)
+            return out
+
+        except (UnitsError, AttributeError):
             return False
         except TypeError:
             return NotImplemented
@@ -866,10 +873,17 @@ class Quantity(np.ndarray, metaclass=InheritDocstrings):
     def __ne__(self, other):
         try:
             try:
-                return super().__ne__(other)
+                out = super().__ne__(other)
             except DeprecationWarning:
-                return np.not_equal(self, other)
-        except UnitsError:
+                out = np.not_equal(self, other)
+
+            # Is it masked?
+            mask = np.isnan(self.value) | np.isnan(other.value)
+            if np.any(mask):
+                out = np.ma.array(out, mask=mask, copy=False)
+            return out
+
+        except (UnitsError, AttributeError):
             return True
         except TypeError:
             return NotImplemented

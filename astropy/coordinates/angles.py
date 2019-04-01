@@ -522,6 +522,9 @@ class Latitude(Angle):
         # rather than the N values in `self.value`.  Also, the
         # comparison is performed on raw arrays, rather than Quantity
         # objects, for speed.
+        if angles is np.nan or angles is np.ma.masked:
+            return
+
         if angles is None:
             angles = self
         lower = u.degree.to(angles.unit, -90.0)

@@ -478,7 +478,9 @@ class TestJoin():
 
         # Check for left, right, outer join which requires masking.  Only Time
         # supports this currently.
-        if cls_name == 'Time':
+        implemented_mixin_classes = ['Quantity', 'Angle', 'Time',
+                                     'Latitude', 'Longitude']
+        if cls_name in implemented_mixin_classes:
             out = table.join(t1, t2, join_type='left')
             assert len(out) == 3
             assert np.all(out['idx'] == [0, 1, 3])
@@ -908,7 +910,7 @@ class TestVStack():
         t = table.QTable([col], names=['a'])
         cls_name = type(col).__name__
 
-        # Vstack works for these classes:
+        # Vstack works for these classes without masking
         implemented_mixin_classes = ['Quantity', 'Angle', 'Time',
                                      'Latitude', 'Longitude',
                                      'EarthLocation']
@@ -924,6 +926,9 @@ class TestVStack():
                     .format(cls_name) in str(err))
 
         # Check for outer stack which requires masking.
+        # Vstack works for these classes:
+        implemented_mixin_classes = ['Quantity', 'Angle', 'Time',
+                                     'Latitude', 'Longitude']
         t2 = table.QTable([col], names=['b'])  # different from col name for t
         if cls_name in implemented_mixin_classes:
             out = table.vstack([t, t2], join_type='outer')
@@ -1177,7 +1182,9 @@ class TestHStack():
             assert np.all(out['col0_2'] == col2)
 
         # Time class supports masking, all other mixins do not
-        if cls_name in ['Time', 'Quantity']:
+        implemented_mixin_classes = ['Quantity', 'Angle', 'Time',
+                                     'Latitude', 'Longitude']
+        if cls_name in implemented_mixin_classes:
             out = table.hstack([t1, t2], join_type='outer')
             assert len(out) == len(t1)
             assert np.all(out['col0_1'] == col1)
