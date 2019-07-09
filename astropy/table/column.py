@@ -175,7 +175,7 @@ class ColumnInfo(BaseColumnInfo):
         return self._parent_cls(length=length, **attrs)
 
 
-class FastDataInfo:
+class FastColumnInfo:
     _name = None
     _meta = None
     _description = None
@@ -192,6 +192,11 @@ class FastDataInfo:
     @property
     def meta(self):
         return self._meta
+
+    @property
+    def dtype(self):
+        # This is hardwired
+        return self._parent.dtype
 
     @property
     def name(self):
@@ -302,7 +307,7 @@ class BaseColumn(_ColumnGetitemShim, np.ndarray):
         try:
             return self._finfo
         except AttributeError:
-            self._finfo = FastDataInfo(self)
+            self._finfo = FastColumnInfo(self)
             return self._finfo
 
     @property
