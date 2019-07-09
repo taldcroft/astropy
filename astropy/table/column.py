@@ -175,6 +175,64 @@ class ColumnInfo(BaseColumnInfo):
         return self._parent_cls(length=length, **attrs)
 
 
+class FastDataInfo:
+    _name = None
+    _meta = None
+    _description = None
+    _unit = None
+    _parent = None
+
+    def __init__(self, parent):
+        self._meta = {}
+        self._parent = parent  # Not a weakref
+
+    def __setattribute__(self, attr, value):
+        raise AttributeError(f"'{self._parent:!r}' object has no attribute {attr}")
+
+    @property
+    def meta(self):
+        return self._meta
+
+    @property
+    def name(self):
+        """
+        The name of this column.
+        """
+        return self._name
+
+    @name.setter
+    def name(self, val):
+        val = fix_column_name(val)
+
+        if self._parent.parent_table is not None:
+            table = self._parent.parent_table
+            table.columns._rename_column(self.name, val)
+
+        self._name = val
+
+    @property
+    def unit(self):
+        """
+        The unit associated with this column.  May be a string or a
+        `astropy.units.UnitBase` instance.
+
+        Setting the ``unit`` property does not change the values of the
+        data.  To perform a unit conversion, use ``convert_unit_to``.
+        """
+        return self._unit
+
+    @unit.setter
+    def unit(self, unit):
+        if unit is None:
+            self._unit = None
+        else:
+            self._unit = Unit(unit, parse_strict='silent')
+
+    @unit.deleter
+    def unit(self):
+        self._unit = None
+
+
 class BaseColumn(_ColumnGetitemShim, np.ndarray):
 
     meta = MetaData()
@@ -231,7 +289,21 @@ class BaseColumn(_ColumnGetitemShim, np.ndarray):
         for index in self.indices:
             index.replace_col(data, self)
 
+        # For playing around
+        self.finfo.name = self.name
+        self.finfo.meta.update(self.meta)
+        self.finfo.unit = self.unit
+        # etc
+
         return self
+
+    @property
+    def finfo(self):
+        try:
+            return self._finfo
+        except AttributeError:
+            self._finfo = FastDataInfo(self)
+            return self._finfo
 
     @property
     def data(self):
