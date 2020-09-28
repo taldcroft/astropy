@@ -1023,6 +1023,7 @@ def _apply_join_funcs(left, right, keys, join_funcs):
     right = right.copy(copy_data=False)
     for key, join_func in join_funcs.items():
         ids1, ids2 = join_func(left[key], right[key])
+        id_key = None
         for ii in itertools.count(1):
             id_key = key + '_' * ii + 'id'
             if id_key not in left.columns and id_key not in right.columns:
@@ -1076,8 +1077,6 @@ def _join(left, right, keys=None, join_type='inner',
     joined_table : `~astropy.table.Table` object
         New table containing the result of the join operation.
     """
-    from astropy.time import Time
-
     # Store user-provided col_name_map until the end
     _col_name_map = col_name_map
 

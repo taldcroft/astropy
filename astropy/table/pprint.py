@@ -165,6 +165,10 @@ class TableFormatter:
         max_lines, max_width : int
 
         """
+        # Declare to keep static type checker happy.
+        lines = None
+        width = None
+
         if max_lines is None:
             max_lines = conf.max_lines
 
@@ -535,6 +539,7 @@ class TableFormatter:
             raise TypeError('align keyword must be str or list or tuple (got {})'
                             .format(type(align)))
 
+        outs = None
         for align_, col in zip(align, table.columns.values()):
             lines, outs = self._pformat_col(col, max_lines, show_name=show_name,
                                             show_unit=show_unit, show_dtype=show_dtype,
@@ -543,7 +548,7 @@ class TableFormatter:
                 lines = lines[:-1]
             cols.append(lines)
 
-        if not cols:
+        if outs is None:
             return ['<No columns>'], {'show_length': False}
 
         # Use the values for the last column since they are all the same

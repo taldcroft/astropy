@@ -299,6 +299,7 @@ def _construct_mixin_from_columns(new_name, obj_attrs, out):
     # data_attr is the object attribute name  (e.g. "ra").  A different
     # example would be a formatted time object that would have (e.g.)
     # "time_col" and "value", respectively.
+    col = None
     for name, data_attr in data_attrs_map.items():
         col = out[name]
         obj_attrs[data_attr] = col
