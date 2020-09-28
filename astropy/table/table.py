@@ -2798,6 +2798,7 @@ class Table:
             raise TypeError('Vals must be an iterable or mapping or None')
 
         columns = self.TableColumns()
+        name = None  # Make static checker happy
         try:
             # Insert val at index for each column
             for name, col, val, mask_ in zip(colnames, self.columns.values(), vals, mask):
