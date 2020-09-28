@@ -2798,9 +2798,9 @@ class Table:
             raise TypeError('Vals must be an iterable or mapping or None')
 
         columns = self.TableColumns()
-        for name, col, val, mask_ in zip(colnames, self.columns.values(), vals, mask):
-            try:
-                # Insert val at index for each column
+        try:
+            # Insert val at index for each column
+            for name, col, val, mask_ in zip(colnames, self.columns.values(), vals, mask):
                 # If new val is masked and the existing column does not support masking
                 # then upgrade the column to a mask-enabled type: either the table-level
                 # default ColumnClass or else MaskedColumn.
@@ -2828,19 +2828,19 @@ class Table:
 
                 columns[name] = newcol
 
-            except Exception as err:
-                raise ValueError("Unable to insert row because of exception in column '{}':\n{}"
-                                 .format(name, err))
+            # insert row in indices
+            for table_index in self.indices:
+                table_index.insert_row(index, vals, self.columns.values())
 
-        # insert row in indices
-        for table_index in self.indices:
-            table_index.insert_row(index, vals, self.columns.values())
+        except Exception as err:
+            raise ValueError("Unable to insert row because of exception in column '{}':\n{}"
+                             .format(name, err))
+        else:
+            self._replace_cols(columns)
 
-        self._replace_cols(columns)
-
-        # Revert groups to default (ungrouped) state
-        if hasattr(self, '_groups'):
-            del self._groups
+            # Revert groups to default (ungrouped) state
+            if hasattr(self, '_groups'):
+                del self._groups
 
     def _replace_cols(self, columns):
         for col, new_col in zip(self.columns.values(), columns.values()):
