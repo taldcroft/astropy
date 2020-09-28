@@ -873,8 +873,7 @@ class Table:
 
         if len(names) != n_cols or len(dtype) != n_cols:
             raise ValueError(
-                'Arguments "names" and "dtype" must match number of columns'
-                .format(inp_str))
+                'Arguments "names" and "dtype" must match number of columns')
 
     def _init_from_list_of_dicts(self, data, names, dtype, n_cols, copy):
         """Initialize table from a list of dictionaries representing rows."""
@@ -2087,6 +2086,8 @@ class Table:
         Same as replace_column but issues warnings under various circumstances.
         """
         warns = conf.replace_warnings
+        refcount = None
+        old_col = None
 
         if 'refcount' in warns and name in self.colnames:
             refcount = sys.getrefcount(self[name])
@@ -2797,9 +2798,9 @@ class Table:
             raise TypeError('Vals must be an iterable or mapping or None')
 
         columns = self.TableColumns()
-        try:
-            # Insert val at index for each column
-            for name, col, val, mask_ in zip(colnames, self.columns.values(), vals, mask):
+        for name, col, val, mask_ in zip(colnames, self.columns.values(), vals, mask):
+            try:
+                # Insert val at index for each column
                 # If new val is masked and the existing column does not support masking
                 # then upgrade the column to a mask-enabled type: either the table-level
                 # default ColumnClass or else MaskedColumn.
@@ -2827,19 +2828,19 @@ class Table:
 
                 columns[name] = newcol
 
-            # insert row in indices
-            for table_index in self.indices:
-                table_index.insert_row(index, vals, self.columns.values())
+            except Exception as err:
+                raise ValueError("Unable to insert row because of exception in column '{}':\n{}"
+                                 .format(name, err))
 
-        except Exception as err:
-            raise ValueError("Unable to insert row because of exception in column '{}':\n{}"
-                             .format(name, err))
-        else:
-            self._replace_cols(columns)
+        # insert row in indices
+        for table_index in self.indices:
+            table_index.insert_row(index, vals, self.columns.values())
 
-            # Revert groups to default (ungrouped) state
-            if hasattr(self, '_groups'):
-                del self._groups
+        self._replace_cols(columns)
+
+        # Revert groups to default (ungrouped) state
+        if hasattr(self, '_groups'):
+            del self._groups
 
     def _replace_cols(self, columns):
         for col, new_col in zip(self.columns.values(), columns.values()):

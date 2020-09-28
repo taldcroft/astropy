@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np  # noqa
 
 READ_DOCSTRING = """
     Read the input ``table`` and return the table.  Most of
