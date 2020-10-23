@@ -3724,5 +3724,5 @@ class TableAttribute(MetaAttribute):
       >>> t.identifier
       10
       >>> t.meta
-      OrderedDict([('__attributes__', {'identifier': 10})])
+      {'__attributes__': {'identifier': 10}}
     """
