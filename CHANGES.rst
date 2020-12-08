@@ -32,6 +32,8 @@ astropy.extern
 astropy.io.ascii
 ^^^^^^^^^^^^^^^^
 
+- Support reading and writing multidimensional columns in ECSV format. [#11155]
+
 astropy.io.fits
 ^^^^^^^^^^^^^^^
 
@@ -68,7 +70,7 @@ astropy.tests
 astropy.time
 ^^^^^^^^^^^^
 
-- Add new time format ``unix_ptp`` (Precision Time Protocol) which provides 
+- Add new time format ``unix_ptp`` (Precision Time Protocol) which provides
   the number of SI seconds since ``1970-01-01T00:00:00 TAI``. [#11143]
 
 astropy.timeseries
