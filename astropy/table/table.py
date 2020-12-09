@@ -18,7 +18,7 @@ from astropy.units import Quantity, QuantityInfo
 from astropy.utils import isiterable, ShapedLikeNDArray
 from astropy.utils.console import color_print
 from astropy.utils.metadata import MetaData, MetaAttribute
-from astropy.utils.data_info import BaseColumnInfo, MixinInfo, ParentDtypeInfo, DataInfo
+from astropy.utils.data_info import BaseColumnInfo, MixinInfo, DataInfo
 from astropy.utils.decorators import format_doc
 from astropy.io.registry import UnifiedReadWriteMethod
 
@@ -31,6 +31,7 @@ from .np_utils import fix_column_name
 from .info import TableInfo
 from .index import Index, _IndexModeContext, get_index
 from .connect import TableRead, TableWrite
+from .ndarray_mixin import NdarrayMixin
 from . import conf
 
 
@@ -876,8 +877,7 @@ class Table:
 
         if len(names) != n_cols or len(dtype) != n_cols:
             raise ValueError(
-                'Arguments "names" and "dtype" must match number of columns'
-                .format(inp_str))
+                'Arguments "names" and "dtype" must match number of columns')
 
     def _init_from_list_of_dicts(self, data, names, dtype, n_cols, copy):
         """Initialize table from a list of dictionaries representing rows."""
@@ -3652,50 +3652,6 @@ class QTable(Table):
             col = super()._convert_col_for_table(col)
 
         return col
-
-
-class NdarrayMixin(np.ndarray):
-    """
-    Mixin column class to allow storage of arbitrary numpy
-    ndarrays within a Table.  This is a subclass of numpy.ndarray
-    and has the same initialization options as ndarray().
-    """
-    info = ParentDtypeInfo()
-
-    def __new__(cls, obj, *args, **kwargs):
-        self = np.array(obj, *args, **kwargs).view(cls)
-        if 'info' in getattr(obj, '__dict__', ()):
-            self.info = obj.info
-        return self
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-
-        if callable(super().__array_finalize__):
-            super().__array_finalize__(obj)
-
-        # Self was created from template (e.g. obj[slice] or (obj * 2))
-        # or viewcast e.g. obj.view(Column).  In either case we want to
-        # init Column attributes for self from obj if possible.
-        if 'info' in getattr(obj, '__dict__', ()):
-            self.info = obj.info
-
-    def __reduce__(self):
-        # patch to pickle Quantity objects (ndarray subclasses), see
-        # http://www.mail-archive.com/numpy-discussion@scipy.org/msg02446.html
-
-        object_state = list(super().__reduce__())
-        object_state[2] = (object_state[2], self.__dict__)
-        return tuple(object_state)
-
-    def __setstate__(self, state):
-        # patch to unpickle NdarrayMixin objects (ndarray subclasses), see
-        # http://www.mail-archive.com/numpy-discussion@scipy.org/msg02446.html
-
-        nd_state, own_state = state
-        super().__setstate__(nd_state)
-        self.__dict__.update(own_state)
 
 
 class TableAttribute(MetaAttribute):
