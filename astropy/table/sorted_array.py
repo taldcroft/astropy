@@ -64,8 +64,11 @@ class SortedArray:
         '''
         pos = self.find_pos(key, row)  # first >= key
 
-        if self.unique and 0 <= pos < len(self.row_index) and \
-           all(self.data[pos][i] == key[i] for i in range(len(key))):
+        if (
+            self.unique
+            and 0 <= pos < len(self.row_index)
+            and all(self.data[pos][i] == key[i] for i in range(len(key)))
+        ):
             # already exists
             raise ValueError(f'Cannot add duplicate value "{key}" in a unique index')
         self.data.insert_row(pos, key)
@@ -112,8 +115,9 @@ class SortedArray:
             if exact and (t == len(key_slice) or key_slice[t] != key[i]):
                 # no match
                 return -1
-            elif t == len(key_slice) or (t == 0 and len(key_slice) > 0
-                                         and key[i] < key_slice[0]):
+            elif t == len(key_slice) or (
+                t == 0 and len(key_slice) > 0 and key[i] < key_slice[0]
+            ):
                 # too small or too large
                 return begin + t
             end = begin + _searchsorted(key_slice, key[i], side='right')
@@ -191,7 +195,7 @@ class SortedArray:
                 upper_pos -= 1  # data[upper_pos] < upper
             elif upper_bound > upper:
                 upper_pos -= 1  # data[upper_pos] <= upper
-        return self.row_index[lower_pos:upper_pos + 1]
+        return self.row_index[lower_pos : upper_pos + 1]
 
     def remove(self, key, data):
         '''
@@ -263,8 +267,7 @@ class SortedArray:
                     break
 
         self.data = self.data[keep_rows]
-        self.row_index = np.array(
-            [row_map[x] for x in self.row_index[keep_rows]])
+        self.row_index = np.array([row_map[x] for x in self.row_index[keep_rows]])
 
     def items(self):
         '''

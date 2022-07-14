@@ -1,13 +1,15 @@
 """
 Table property for providing information about table.
 """
+import os
+
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import sys
-import os
 from contextlib import contextmanager
 from inspect import isclass
 
 import numpy as np
+
 from astropy.utils.data_info import DataInfo
 
 __all__ = ['table_info', 'TableInfo', 'serialize_method_as']
@@ -153,6 +155,7 @@ def serialize_method_as(tbl, serialize_method):
     -------
     None (context manager)
     """
+
     def get_override_sm(col):
         """
         Determine if the ``serialize_method`` str or dict specifies an
@@ -199,8 +202,9 @@ def serialize_method_as(tbl, serialize_method):
                     # is not actually known (this gets determined by the write function
                     # in registry.py).  Note this creates a new temporary dict object
                     # so that the restored version is the same original object.
-                    col.info.serialize_method = {fmt: override_sm
-                                                 for fmt in col.info.serialize_method}
+                    col.info.serialize_method = {
+                        fmt: override_sm for fmt in col.info.serialize_method
+                    }
 
     # Finally yield for the context block
     try:

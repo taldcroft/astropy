@@ -1,15 +1,23 @@
-import numpy as np
 import pickle
 
-from astropy.table import Table, Column, MaskedColumn, QTable
-from astropy.table.table_helpers import simple_table
-from astropy.units import Quantity, deg
-from astropy.time import Time
+import numpy as np
+
 from astropy.coordinates import SkyCoord
+from astropy.table import Column, MaskedColumn, QTable, Table
+from astropy.table.table_helpers import simple_table
+from astropy.time import Time
+from astropy.units import Quantity, deg
 
 
 def test_pickle_column(protocol):
-    c = Column(data=[1, 2], name='a', format='%05d', description='col a', unit='cm', meta={'a': 1})
+    c = Column(
+        data=[1, 2],
+        name='a',
+        format='%05d',
+        description='col a',
+        unit='cm',
+        meta={'a': 1},
+    )
     cs = pickle.dumps(c)
     cp = pickle.loads(cs)
     assert np.all(cp == c)
@@ -19,8 +27,14 @@ def test_pickle_column(protocol):
 
 
 def test_pickle_masked_column(protocol):
-    c = MaskedColumn(data=[1, 2], name='a', format='%05d', description='col a', unit='cm',
-                     meta={'a': 1})
+    c = MaskedColumn(
+        data=[1, 2],
+        name='a',
+        format='%05d',
+        description='col a',
+        unit='cm',
+        meta={'a': 1},
+    )
     c.mask[1] = True
     c.fill_value = -99
 
@@ -50,9 +64,22 @@ def test_pickle_multidimensional_column(protocol):
 
 
 def test_pickle_table(protocol):
-    a = Column(data=[1, 2], name='a', format='%05d', description='col a', unit='cm', meta={'a': 1})
-    b = Column(data=[3.0, 4.0], name='b', format='%05d', description='col b', unit='cm',
-               meta={'b': 1})
+    a = Column(
+        data=[1, 2],
+        name='a',
+        format='%05d',
+        description='col a',
+        unit='cm',
+        meta={'a': 1},
+    )
+    b = Column(
+        data=[3.0, 4.0],
+        name='b',
+        format='%05d',
+        description='col b',
+        unit='cm',
+        meta={'b': 1},
+    )
 
     for table_class in Table, QTable:
         t = table_class([a, b], meta={'a': 1, 'b': Quantity(10, unit='s')})
@@ -82,9 +109,22 @@ def test_pickle_table(protocol):
 
 
 def test_pickle_masked_table(protocol):
-    a = Column(data=[1, 2], name='a', format='%05d', description='col a', unit='cm', meta={'a': 1})
-    b = Column(data=[3.0, 4.0], name='b', format='%05d', description='col b', unit='cm',
-               meta={'b': 1})
+    a = Column(
+        data=[1, 2],
+        name='a',
+        format='%05d',
+        description='col a',
+        unit='cm',
+        meta={'a': 1},
+    )
+    b = Column(
+        data=[3.0, 4.0],
+        name='b',
+        format='%05d',
+        description='col b',
+        unit='cm',
+        meta={'b': 1},
+    )
     t = Table([a, b], meta={'a': 1}, masked=True)
     t['a'].mask[1] = True
     t['a'].fill_value = -99

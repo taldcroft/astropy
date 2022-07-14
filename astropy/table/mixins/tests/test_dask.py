@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_equal
 
 from astropy.table import Table
@@ -8,7 +8,6 @@ da = pytest.importorskip('dask.array')
 
 
 class TestDaskHandler:
-
     def setup_method(self, method):
         self.t = Table()
         self.t['a'] = da.arange(10)
@@ -40,9 +39,20 @@ class TestDaskHandler:
         assert_equal(sub['a'].compute(), np.arange(10))
 
     def test_pformat(self):
-        assert self.t.pformat_all() == [' a ', '---', '  0', '  1', '  2',
-                                        '  3', '  4', '  5', '  6', '  7',
-                                        '  8', '  9']
+        assert self.t.pformat_all() == [
+            ' a ',
+            '---',
+            '  0',
+            '  1',
+            '  2',
+            '  3',
+            '  4',
+            '  5',
+            '  6',
+            '  7',
+            '  8',
+            '  9',
+        ]
 
     def test_info_preserved(self):
 

@@ -2,12 +2,13 @@
 
 import sys
 
-import pytest
 import numpy as np
+import pytest
 
 from astropy import table
-from astropy.table import Row
 from astropy import units as u
+from astropy.table import Row
+
 from .conftest import MaskedTable
 
 
@@ -24,7 +25,7 @@ def test_masked_row_with_object_col():
 
 
 @pytest.mark.usefixtures('table_types')
-class TestRow():
+class TestRow:
     def _setup(self, table_types):
         self._table_type = table_types.Table
         self._column_type = table_types.Column
@@ -134,28 +135,31 @@ class TestRow():
         self._setup(table_types)
         table = self.t
         row = table[0]
-        assert repr(row).splitlines() == ['<{} {}{}>'
-                                          .format(row.__class__.__name__,
-                                                  'index=0',
-                                                  ' masked=True' if table.masked else ''),
-                                          '  a     b  ',
-                                          'int64 int64',
-                                          '----- -----',
-                                          '    1     4']
-        assert str(row).splitlines() == [' a   b ',
-                                         '--- ---',
-                                         '  1   4']
+        assert repr(row).splitlines() == [
+            '<{} {}{}>'.format(
+                row.__class__.__name__,
+                'index=0',
+                ' masked=True' if table.masked else '',
+            ),
+            '  a     b  ',
+            'int64 int64',
+            '----- -----',
+            '    1     4',
+        ]
+        assert str(row).splitlines() == [' a   b ', '--- ---', '  1   4']
 
         assert row._repr_html_().splitlines() == [
-            '<i>{} {}{}</i>'
-            .format(row.__class__.__name__,
-                    'index=0',
-                    ' masked=True' if table.masked else ''),
+            '<i>{} {}{}</i>'.format(
+                row.__class__.__name__,
+                'index=0',
+                ' masked=True' if table.masked else '',
+            ),
             f'<table id="table{id(table)}">',
             '<thead><tr><th>a</th><th>b</th></tr></thead>',
             '<thead><tr><th>int64</th><th>int64</th></tr></thead>',
             '<tr><td>1</td><td>4</td></tr>',
-            '</table>']
+            '</table>',
+        ]
 
     def test_as_void(self, table_types):
         """Test the as_void() method"""
@@ -205,8 +209,9 @@ class TestRow():
     def test_create_rows_from_list(self, table_types):
         """https://github.com/astropy/astropy/issues/8976"""
         orig_tab = table_types.Table([[1, 2, 3], [4, 5, 6]], names=('a', 'b'))
-        new_tab = type(orig_tab)(rows=[row for row in orig_tab],
-                                 names=orig_tab.dtype.names)
+        new_tab = type(orig_tab)(
+            rows=[row for row in orig_tab], names=orig_tab.dtype.names
+        )
         assert np.all(orig_tab == new_tab)
 
     def test_row_keys_values(self, table_types):
@@ -252,20 +257,22 @@ def test_row_tuple_column_slice():
     """
     Test getting and setting a row using a tuple or list of column names
     """
-    t = table.QTable([[1, 2, 3] * u.m,
-                      [10., 20., 30.],
-                      [100., 200., 300.],
-                      ['x', 'y', 'z']], names=['a', 'b', 'c', 'd'])
+    t = table.QTable(
+        [[1, 2, 3] * u.m, [10.0, 20.0, 30.0], [100.0, 200.0, 300.0], ['x', 'y', 'z']],
+        names=['a', 'b', 'c', 'd'],
+    )
     # Get a row for index=1
     r1 = t[1]
     # Column slice with tuple of col names
     r1_abc = r1['a', 'b', 'c']  # Row object for these cols
-    r1_abc_repr = ['<Row index=1>',
-                   '   a       b       c   ',
-                   '   m                   ',
-                   'float64 float64 float64',
-                   '------- ------- -------',
-                   '    2.0    20.0   200.0']
+    r1_abc_repr = [
+        '<Row index=1>',
+        '   a       b       c   ',
+        '   m                   ',
+        'float64 float64 float64',
+        '------- ------- -------',
+        '    2.0    20.0   200.0',
+    ]
     assert repr(r1_abc).splitlines() == r1_abc_repr
 
     # Column slice with list of col names
@@ -274,25 +281,25 @@ def test_row_tuple_column_slice():
 
     # Make sure setting on a tuple or slice updates parent table and row
     r1['c'] = 1000
-    r1['a', 'b'] = 1000 * u.cm, 100.
+    r1['a', 'b'] = 1000 * u.cm, 100.0
     assert r1['a'] == 10 * u.m
     assert r1['b'] == 100
     assert t['a'][1] == 10 * u.m
-    assert t['b'][1] == 100.
+    assert t['b'][1] == 100.0
     assert t['c'][1] == 1000
 
     # Same but using a list of column names instead of tuple
-    r1[['a', 'b']] = 2000 * u.cm, 200.
+    r1[['a', 'b']] = 2000 * u.cm, 200.0
     assert r1['a'] == 20 * u.m
     assert r1['b'] == 200
     assert t['a'][1] == 20 * u.m
-    assert t['b'][1] == 200.
+    assert t['b'][1] == 200.0
 
     # Set column slice of column slice
     r1_abc['a', 'c'] = -1 * u.m, -10
     assert t['a'][1] == -1 * u.m
-    assert t['b'][1] == 200.
-    assert t['c'][1] == -10.
+    assert t['b'][1] == 200.0
+    assert t['c'][1] == -10.0
 
     # Bad column name
     with pytest.raises(KeyError) as err:
@@ -315,8 +322,7 @@ def test_row_tuple_column_slice_transaction():
     Test that setting a row that fails part way through does not
     change the table at all.
     """
-    t = table.QTable([[10., 20., 30.],
-                      [1, 2, 3] * u.m], names=['a', 'b'])
+    t = table.QTable([[10.0, 20.0, 30.0], [1, 2, 3] * u.m], names=['a', 'b'])
     tc = t.copy()
 
     # First one succeeds but second fails.
@@ -338,17 +344,13 @@ def test_uint_indexing():
 
     Regression test for gh-7464.
     """
-    t = table.Table([[1., 2., 3.]], names='a')
-    assert t['a'][1] == 2.
-    assert t['a'][np.int_(1)] == 2.
-    assert t['a'][np.uint(1)] == 2.
-    assert t[np.uint(1)]['a'] == 2.
+    t = table.Table([[1.0, 2.0, 3.0]], names='a')
+    assert t['a'][1] == 2.0
+    assert t['a'][np.int_(1)] == 2.0
+    assert t['a'][np.uint(1)] == 2.0
+    assert t[np.uint(1)]['a'] == 2.0
 
-    trepr = ['<Row index=1>',
-             '   a   ',
-             'float64',
-             '-------',
-             '    2.0']
+    trepr = ['<Row index=1>', '   a   ', 'float64', '-------', '    2.0']
 
     assert repr(t[1]).splitlines() == trepr
     assert repr(t[np.int_(1)]).splitlines() == trepr

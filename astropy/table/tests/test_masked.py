@@ -1,15 +1,15 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 """Test behavior related to masked tables"""
 
-import pytest
 import numpy as np
 import numpy.ma as ma
+import pytest
 
-from astropy.table import Column, MaskedColumn, Table, QTable
+import astropy.units as u
+from astropy.table import Column, MaskedColumn, QTable, Table
 from astropy.table.column import BaseColumn
 from astropy.time import Time
 from astropy.utils.masked import Masked
-import astropy.units as u
 
 
 class SetupData:
@@ -21,13 +21,23 @@ class SetupData:
         self.d = MaskedColumn(name='d', data=[7, 8, 7], mask=self.d_mask)
         self.t = Table([self.a, self.b], masked=True)
         self.ca = Column(name='ca', data=[1, 2, 3])
-        self.sc = MaskedColumn(name='sc', data=[(1, 1.), (2, 2.), (3, 3.)],
-                               dtype='i8,f8', fill_value=(0, -1.))
+        self.sc = MaskedColumn(
+            name='sc',
+            data=[(1, 1.0), (2, 2.0), (3, 3.0)],
+            dtype='i8,f8',
+            fill_value=(0, -1.0),
+        )
 
 
 class TestPprint(SetupData):
     def test_pformat(self):
-        assert self.t.pformat() == [' a   b ', '--- ---', '  1  --', '  2  --', '  3  --']
+        assert self.t.pformat() == [
+            ' a   b ',
+            '--- ---',
+            '  1  --',
+            '  2  --',
+            '  3  --',
+        ]
 
 
 class TestFilled:
@@ -36,8 +46,12 @@ class TestFilled:
     def setup_method(self, method):
         mask = [True, False, False]
         self.meta = {'a': 1, 'b': [2, 3]}
-        self.a = MaskedColumn(name='a', data=[1, 2, 3], fill_value=10, mask=mask, meta={'a': 1})
-        self.b = MaskedColumn(name='b', data=[4.0, 5.0, 6.0], fill_value=10.0, mask=mask)
+        self.a = MaskedColumn(
+            name='a', data=[1, 2, 3], fill_value=10, mask=mask, meta={'a': 1}
+        )
+        self.b = MaskedColumn(
+            name='b', data=[4.0, 5.0, 6.0], fill_value=10.0, mask=mask
+        )
         self.c = MaskedColumn(name='c', data=['7', '8', '9'], fill_value='1', mask=mask)
 
     def test_filled_column(self):
@@ -122,9 +136,9 @@ class TestFillValue(SetupData):
         assert np.all(c.filled('XY') == ['XY', 'yyyy'])
 
     def test_set_get_fill_value_for_structured_column(self):
-        assert self.sc.fill_value == np.array((0, -1.), self.sc.dtype)
+        assert self.sc.fill_value == np.array((0, -1.0), self.sc.dtype)
         sc = self.sc.copy()
-        assert sc.fill_value.item() == (0, -1.)
+        assert sc.fill_value.item() == (0, -1.0)
         sc.fill_value = (-1, np.inf)
         assert sc.fill_value == np.array((-1, np.inf), self.sc.dtype)
         sc2 = MaskedColumn(sc, fill_value=(-2, -np.inf))
@@ -255,8 +269,9 @@ class TestTableInit(SetupData):
         for k in t1.colnames:
             assert t1[k].dtype == t2[k].dtype
             assert np.all(t1[k] == t2[k]) in (True, np.ma.masked)
-            assert np.all(getattr(t1[k], 'mask', False)
-                          == getattr(t2[k], 'mask', False))
+            assert np.all(
+                getattr(t1[k], 'mask', False) == getattr(t2[k], 'mask', False)
+            )
 
     def test_mask_false_if_input_mask_not_true(self):
         """Masking is always False if initial masked arg is not True"""
@@ -295,7 +310,6 @@ class TestTableInit(SetupData):
 
 
 class TestAddColumn:
-
     def test_add_masked_column_to_masked_table(self):
         t = Table(masked=True)
         assert t.masked
@@ -352,7 +366,6 @@ class TestAddColumn:
 
 
 class TestRenameColumn:
-
     def test_rename_masked_column(self):
         t = Table(masked=True)
         t.add_column(MaskedColumn(name='a', data=[1, 2, 3], mask=[0, 1, 0]))
@@ -366,7 +379,6 @@ class TestRenameColumn:
 
 
 class TestRemoveColumn:
-
     def test_remove_masked_column(self):
         t = Table(masked=True)
         t.add_column(MaskedColumn(name='a', data=[1, 2, 3], mask=[0, 1, 0]))
@@ -381,7 +393,6 @@ class TestRemoveColumn:
 
 
 class TestAddRow:
-
     def test_add_masked_row_to_masked_table_iterable(self):
         t = Table(masked=True)
         t.add_column(MaskedColumn(name='a', data=[1], mask=[0]))
@@ -485,9 +496,10 @@ class TestAddRow:
         t.add_row((3 * u.m,))  # No problem
         with pytest.raises(ValueError) as exc:
             t.add_row((3 * u.m,), mask=(True,))
-        assert (exc.value.args[0].splitlines()
-                == ["Unable to insert row because of exception in column 'a':",
-                    "mask was supplied for column 'a' but it does not support masked values"])
+        assert exc.value.args[0].splitlines() == [
+            "Unable to insert row because of exception in column 'a':",
+            "mask was supplied for column 'a' but it does not support masked values",
+        ]
 
 
 def test_setting_from_masked_column():
@@ -505,7 +517,9 @@ def test_setting_from_masked_column():
         assert t['b'][1] == 222  # New from t['c'] since t['c'][1] is unmasked
         assert t['b'][2] == 33
         assert t['b'][3] == 44
-        assert np.all(t['b'].mask == t.mask['b'])  # Avoid t.mask in general, this is for testing
+        assert np.all(
+            t['b'].mask == t.mask['b']
+        )  # Avoid t.mask in general, this is for testing
 
         mask_before_add = t.mask.copy()
         t['d'] = np.arange(len(t))

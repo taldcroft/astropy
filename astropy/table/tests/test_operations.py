@@ -1,29 +1,39 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from astropy.table.table_helpers import ArrayWrapper
-from astropy.coordinates.earth import EarthLocation
-from astropy.units.quantity import Quantity
 from collections import OrderedDict
 from contextlib import nullcontext
 
-import pytest
 import numpy as np
+import pytest
 
-from astropy.table import Table, QTable, TableMergeError, Column, MaskedColumn, NdarrayMixin
-from astropy.table.operations import _get_out_class, join_skycoord, join_distance
-from astropy import units as u
-from astropy.utils import metadata
-from astropy.utils.metadata import MergeConflictError
 from astropy import table
-from astropy.time import Time, TimeDelta
-from astropy.coordinates import (SkyCoord, SphericalRepresentation,
-                                 UnitSphericalRepresentation,
-                                 CartesianRepresentation,
-                                 BaseRepresentationOrDifferential,
-                                 search_around_3d)
-from astropy.coordinates.tests.test_representation import representation_equal
+from astropy import units as u
+from astropy.coordinates import (
+    BaseRepresentationOrDifferential,
+    CartesianRepresentation,
+    SkyCoord,
+    SphericalRepresentation,
+    UnitSphericalRepresentation,
+    search_around_3d,
+)
+from astropy.coordinates.earth import EarthLocation
 from astropy.coordinates.tests.helper import skycoord_equal
+from astropy.coordinates.tests.test_representation import representation_equal
+from astropy.table import (
+    Column,
+    MaskedColumn,
+    NdarrayMixin,
+    QTable,
+    Table,
+    TableMergeError,
+)
+from astropy.table.operations import _get_out_class, join_distance, join_skycoord
+from astropy.table.table_helpers import ArrayWrapper
+from astropy.time import Time, TimeDelta
+from astropy.units.quantity import Quantity
+from astropy.utils import metadata
 from astropy.utils.compat.optional_deps import HAS_SCIPY  # noqa
+from astropy.utils.metadata import MergeConflictError
 
 
 def sort_eq(list1, list2):
@@ -46,19 +56,22 @@ def check_mask(col, exp_mask):
     return out
 
 
-class TestJoin():
-
+class TestJoin:
     def _setup(self, t_cls=Table):
-        lines1 = [' a   b   c ',
-                  '  0 foo  L1',
-                  '  1 foo  L2',
-                  '  1 bar  L3',
-                  '  2 bar  L4']
-        lines2 = [' a   b   d ',
-                  '  1 foo  R1',
-                  '  1 foo  R2',
-                  '  2 bar  R3',
-                  '  4 bar  R4']
+        lines1 = [
+            ' a   b   c ',
+            '  0 foo  L1',
+            '  1 foo  L2',
+            '  1 bar  L3',
+            '  2 bar  L4',
+        ]
+        lines2 = [
+            ' a   b   d ',
+            '  1 foo  R1',
+            '  1 foo  R2',
+            '  2 bar  R3',
+            '  4 bar  R4',
+        ]
         self.t1 = t_cls.read(lines1, format='ascii')
         self.t2 = t_cls.read(lines2, format='ascii')
         self.t3 = t_cls(self.t2, copy=True)
@@ -67,10 +80,9 @@ class TestJoin():
         self.t2.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
         self.t3.meta.update(OrderedDict([('b', 3), ('c', [1, 2]), ('d', 2), ('a', 1)]))
 
-        self.meta_merge = OrderedDict([('b', [1, 2, 3, 4]),
-                                       ('c', {'a': 1, 'b': 1}),
-                                       ('d', 1),
-                                       ('a', 1)])
+        self.meta_merge = OrderedDict(
+            [('b', [1, 2, 3, 4]), ('c', {'a': 1, 'b': 1}), ('d', 1), ('a', 1)]
+        )
 
     def test_table_meta_merge(self, operation_table_type):
         self._setup(operation_table_type)
@@ -87,20 +99,28 @@ class TestJoin():
         assert out.meta == self.t3.meta
 
         with pytest.warns(metadata.MergeConflictWarning) as w:
-            out = table.join(self.t1, self.t3, join_type='inner', metadata_conflicts='warn')
+            out = table.join(
+                self.t1, self.t3, join_type='inner', metadata_conflicts='warn'
+            )
         assert len(w) == 3
 
         assert out.meta == self.t3.meta
 
-        out = table.join(self.t1, self.t3, join_type='inner', metadata_conflicts='silent')
+        out = table.join(
+            self.t1, self.t3, join_type='inner', metadata_conflicts='silent'
+        )
 
         assert out.meta == self.t3.meta
 
         with pytest.raises(MergeConflictError):
-            out = table.join(self.t1, self.t3, join_type='inner', metadata_conflicts='error')
+            out = table.join(
+                self.t1, self.t3, join_type='inner', metadata_conflicts='error'
+            )
 
         with pytest.raises(ValueError):
-            out = table.join(self.t1, self.t3, join_type='inner', metadata_conflicts='nonsense')
+            out = table.join(
+                self.t1, self.t3, join_type='inner', metadata_conflicts='nonsense'
+            )
 
     def test_both_unmasked_inner(self, operation_table_type):
         self._setup(operation_table_type)
@@ -115,11 +135,16 @@ class TestJoin():
         assert type(t12['c']) is type(t1['c'])  # noqa
         assert type(t12['d']) is type(t2['d'])  # noqa
         assert t12.masked is False
-        assert sort_eq(t12.pformat(), [' a   b   c   d ',
-                                       '--- --- --- ---',
-                                       '  1 foo  L2  R1',
-                                       '  1 foo  L2  R2',
-                                       '  2 bar  L4  R3'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a   b   c   d ',
+                '--- --- --- ---',
+                '  1 foo  L2  R1',
+                '  1 foo  L2  R2',
+                '  2 bar  L4  R3',
+            ],
+        )
         # Table meta merged properly
         assert t12.meta == self.meta_merge
 
@@ -137,37 +162,52 @@ class TestJoin():
         for name in ('a', 'b', 'c'):
             assert type(t12[name]) is Column
         assert type(t12['d']) is MaskedColumn
-        assert sort_eq(t12.pformat(), [' a   b   c   d ',
-                                       '--- --- --- ---',
-                                       '  0 foo  L1  --',
-                                       '  1 bar  L3  --',
-                                       '  1 foo  L2  R1',
-                                       '  1 foo  L2  R2',
-                                       '  2 bar  L4  R3'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a   b   c   d ',
+                '--- --- --- ---',
+                '  0 foo  L1  --',
+                '  1 bar  L3  --',
+                '  1 foo  L2  R1',
+                '  1 foo  L2  R2',
+                '  2 bar  L4  R3',
+            ],
+        )
 
         # Right join
         t12 = table.join(t1, t2, join_type='right')
         assert t12.has_masked_columns is True
         assert t12.masked is False
-        assert sort_eq(t12.pformat(), [' a   b   c   d ',
-                                       '--- --- --- ---',
-                                       '  1 foo  L2  R1',
-                                       '  1 foo  L2  R2',
-                                       '  2 bar  L4  R3',
-                                       '  4 bar  --  R4'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a   b   c   d ',
+                '--- --- --- ---',
+                '  1 foo  L2  R1',
+                '  1 foo  L2  R2',
+                '  2 bar  L4  R3',
+                '  4 bar  --  R4',
+            ],
+        )
 
         # Outer join
         t12 = table.join(t1, t2, join_type='outer')
         assert t12.has_masked_columns is True
         assert t12.masked is False
-        assert sort_eq(t12.pformat(), [' a   b   c   d ',
-                                       '--- --- --- ---',
-                                       '  0 foo  L1  --',
-                                       '  1 bar  L3  --',
-                                       '  1 foo  L2  R1',
-                                       '  1 foo  L2  R2',
-                                       '  2 bar  L4  R3',
-                                       '  4 bar  --  R4'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a   b   c   d ',
+                '--- --- --- ---',
+                '  0 foo  L1  --',
+                '  1 bar  L3  --',
+                '  1 foo  L2  R1',
+                '  1 foo  L2  R2',
+                '  2 bar  L4  R3',
+                '  4 bar  --  R4',
+            ],
+        )
 
         # Check that the common keys are 'a', 'b'
         t12a = table.join(t1, t2, join_type='outer')
@@ -188,13 +228,18 @@ class TestJoin():
         assert type(t12['b_2']) is type(t2['b'])  # noqa
         assert type(t12['d']) is type(t2['d'])  # noqa
         assert t12.masked is False
-        assert sort_eq(t12.pformat(), [' a  b_1  c  b_2  d ',
-                                       '--- --- --- --- ---',
-                                       '  1 foo  L2 foo  R1',
-                                       '  1 foo  L2 foo  R2',
-                                       '  1 bar  L3 foo  R1',
-                                       '  1 bar  L3 foo  R2',
-                                       '  2 bar  L4 bar  R3'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a  b_1  c  b_2  d ',
+                '--- --- --- --- ---',
+                '  1 foo  L2 foo  R1',
+                '  1 foo  L2 foo  R2',
+                '  1 bar  L3 foo  R1',
+                '  1 bar  L3 foo  R2',
+                '  2 bar  L4 bar  R3',
+            ],
+        )
 
     def test_both_unmasked_single_key_left_right_outer(self, operation_table_type):
         if operation_table_type is QTable:
@@ -206,39 +251,54 @@ class TestJoin():
         # Left join
         t12 = table.join(t1, t2, join_type='left', keys='a')
         assert t12.has_masked_columns is True
-        assert sort_eq(t12.pformat(), [' a  b_1  c  b_2  d ',
-                                       '--- --- --- --- ---',
-                                       '  0 foo  L1  --  --',
-                                       '  1 foo  L2 foo  R1',
-                                       '  1 foo  L2 foo  R2',
-                                       '  1 bar  L3 foo  R1',
-                                       '  1 bar  L3 foo  R2',
-                                       '  2 bar  L4 bar  R3'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a  b_1  c  b_2  d ',
+                '--- --- --- --- ---',
+                '  0 foo  L1  --  --',
+                '  1 foo  L2 foo  R1',
+                '  1 foo  L2 foo  R2',
+                '  1 bar  L3 foo  R1',
+                '  1 bar  L3 foo  R2',
+                '  2 bar  L4 bar  R3',
+            ],
+        )
 
         # Right join
         t12 = table.join(t1, t2, join_type='right', keys='a')
         assert t12.has_masked_columns is True
-        assert sort_eq(t12.pformat(), [' a  b_1  c  b_2  d ',
-                                       '--- --- --- --- ---',
-                                       '  1 foo  L2 foo  R1',
-                                       '  1 foo  L2 foo  R2',
-                                       '  1 bar  L3 foo  R1',
-                                       '  1 bar  L3 foo  R2',
-                                       '  2 bar  L4 bar  R3',
-                                       '  4  --  -- bar  R4'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a  b_1  c  b_2  d ',
+                '--- --- --- --- ---',
+                '  1 foo  L2 foo  R1',
+                '  1 foo  L2 foo  R2',
+                '  1 bar  L3 foo  R1',
+                '  1 bar  L3 foo  R2',
+                '  2 bar  L4 bar  R3',
+                '  4  --  -- bar  R4',
+            ],
+        )
 
         # Outer join
         t12 = table.join(t1, t2, join_type='outer', keys='a')
         assert t12.has_masked_columns is True
-        assert sort_eq(t12.pformat(), [' a  b_1  c  b_2  d ',
-                                       '--- --- --- --- ---',
-                                       '  0 foo  L1  --  --',
-                                       '  1 foo  L2 foo  R1',
-                                       '  1 foo  L2 foo  R2',
-                                       '  1 bar  L3 foo  R1',
-                                       '  1 bar  L3 foo  R2',
-                                       '  2 bar  L4 bar  R3',
-                                       '  4  --  -- bar  R4'])
+        assert sort_eq(
+            t12.pformat(),
+            [
+                ' a  b_1  c  b_2  d ',
+                '--- --- --- --- ---',
+                '  0 foo  L1  --  --',
+                '  1 foo  L2 foo  R1',
+                '  1 foo  L2 foo  R2',
+                '  1 bar  L3 foo  R1',
+                '  1 bar  L3 foo  R2',
+                '  2 bar  L4 bar  R3',
+                '  4  --  -- bar  R4',
+            ],
+        )
 
     def test_masked_unmasked(self, operation_table_type):
         if operation_table_type is QTable:
@@ -260,22 +320,32 @@ class TestJoin():
         t1m['b'].mask[1] = True
         t1m['c'].mask[2] = True
         t1m2 = table.join(t1m, t2, join_type='inner', keys='a')
-        assert sort_eq(t1m2.pformat(), [' a  b_1  c  b_2  d ',
-                                        '--- --- --- --- ---',
-                                        '  1  --  L2 foo  R1',
-                                        '  1  --  L2 foo  R2',
-                                        '  1 bar  -- foo  R1',
-                                        '  1 bar  -- foo  R2',
-                                        '  2 bar  L4 bar  R3'])
+        assert sort_eq(
+            t1m2.pformat(),
+            [
+                ' a  b_1  c  b_2  d ',
+                '--- --- --- --- ---',
+                '  1  --  L2 foo  R1',
+                '  1  --  L2 foo  R2',
+                '  1 bar  -- foo  R1',
+                '  1 bar  -- foo  R2',
+                '  2 bar  L4 bar  R3',
+            ],
+        )
 
         t21m = table.join(t2, t1m, join_type='inner', keys='a')
-        assert sort_eq(t21m.pformat(), [' a  b_1  d  b_2  c ',
-                                        '--- --- --- --- ---',
-                                        '  1 foo  R2  --  L2',
-                                        '  1 foo  R2 bar  --',
-                                        '  1 foo  R1  --  L2',
-                                        '  1 foo  R1 bar  --',
-                                        '  2 bar  R3 bar  L4'])
+        assert sort_eq(
+            t21m.pformat(),
+            [
+                ' a  b_1  d  b_2  c ',
+                '--- --- --- --- ---',
+                '  1 foo  R2  --  L2',
+                '  1 foo  R2 bar  --',
+                '  1 foo  R1  --  L2',
+                '  1 foo  R1 bar  --',
+                '  2 bar  R3 bar  L4',
+            ],
+        )
 
     def test_masked_masked(self, operation_table_type):
         self._setup(operation_table_type)
@@ -302,16 +372,22 @@ class TestJoin():
         t1m['c'].mask[2] = True
         t2m['d'].mask[2] = True
         t1m2m = table.join(t1m, t2m, join_type='inner', keys='a')
-        assert sort_eq(t1m2m.pformat(), [' a  b_1  c  b_2  d ',
-                                         '--- --- --- --- ---',
-                                         '  1  --  L2 foo  R1',
-                                         '  1  --  L2 foo  R2',
-                                         '  1 bar  -- foo  R1',
-                                         '  1 bar  -- foo  R2',
-                                         '  2 bar  L4 bar  --'])
+        assert sort_eq(
+            t1m2m.pformat(),
+            [
+                ' a  b_1  c  b_2  d ',
+                '--- --- --- --- ---',
+                '  1  --  L2 foo  R1',
+                '  1  --  L2 foo  R2',
+                '  1 bar  -- foo  R1',
+                '  1 bar  -- foo  R2',
+                '  2 bar  L4 bar  --',
+            ],
+        )
 
     def test_classes(self):
         """Ensure that classes and subclasses get through as expected"""
+
         class MyCol(Column):
             pass
 
@@ -329,15 +405,25 @@ class TestJoin():
         t2['e'] = MyMaskedCol([5, 6])
 
         t12 = table.join(t1, t2, join_type='inner')
-        for name, exp_type in (('a', MyCol), ('b', MyCol), ('c', MyMaskedCol),
-                               ('d', MyCol), ('e', MyMaskedCol)):
+        for name, exp_type in (
+            ('a', MyCol),
+            ('b', MyCol),
+            ('c', MyMaskedCol),
+            ('d', MyCol),
+            ('e', MyMaskedCol),
+        ):
             assert type(t12[name] is exp_type)
 
         t21 = table.join(t2, t1, join_type='left')
         # Note col 'b' gets upgraded from MyCol to MaskedColumn since it needs to be
         # masked, but col 'c' stays since MyMaskedCol supports masking.
-        for name, exp_type in (('a', MyCol), ('b', MaskedColumn), ('c', MyMaskedCol),
-                               ('d', MyCol), ('e', MyMaskedCol)):
+        for name, exp_type in (
+            ('a', MyCol),
+            ('b', MaskedColumn),
+            ('c', MyMaskedCol),
+            ('d', MyCol),
+            ('e', MyMaskedCol),
+        ):
             assert type(t21[name] is exp_type)
 
     def test_col_rename(self, operation_table_type):
@@ -348,8 +434,13 @@ class TestJoin():
         """
         t1 = self.t1
         t2 = self.t2
-        t12 = table.join(t1, t2, uniq_col_name='x_{table_name}_{col_name}_y',
-                         table_names=['L', 'R'], keys='a')
+        t12 = table.join(
+            t1,
+            t2,
+            uniq_col_name='x_{table_name}_{col_name}_y',
+            table_names=['L', 'R'],
+            keys='a',
+        )
         assert t12.colnames == ['a', 'x_L_b_y', 'c', 'x_R_b_y', 'd']
 
     def test_rename_conflict(self, operation_table_type):
@@ -433,7 +524,10 @@ class TestJoin():
         t2['c'].info.description = 't2_c'
 
         if operation_table_type is Table:
-            ctx = pytest.warns(metadata.MergeConflictWarning, match=r"In merged column 'a' the 'unit' attribute does not match \(cm != m\)")  # noqa
+            ctx = pytest.warns(
+                metadata.MergeConflictWarning,
+                match=r"In merged column 'a' the 'unit' attribute does not match \(cm != m\)",
+            )  # noqa
         else:
             ctx = nullcontext()
 
@@ -481,34 +575,26 @@ class TestJoin():
 
         a = table.MaskedColumn([1, 2, 3], name='a')
         a2 = table.Column([1, 3, 4], name='a')
-        b = table.MaskedColumn([[1, 2],
-                                [3, 4],
-                                [5, 6]],
-                               name='b',
-                               mask=[[1, 0],
-                                     [0, 1],
-                                     [0, 0]])
-        c = table.Column([[1, 1],
-                          [2, 2],
-                          [3, 3]],
-                         name='c')
+        b = table.MaskedColumn(
+            [[1, 2], [3, 4], [5, 6]], name='b', mask=[[1, 0], [0, 1], [0, 0]]
+        )
+        c = table.Column([[1, 1], [2, 2], [3, 3]], name='c')
         t1 = operation_table_type([a, b])
         t2 = operation_table_type([a2, c])
         t12 = table.join(t1, t2, join_type='inner')
 
-        assert np.all(t12['b'].mask == [[True, False],
-                                        [False, False]])
+        assert np.all(t12['b'].mask == [[True, False], [False, False]])
         assert not hasattr(t12['c'], 'mask')
 
         t12 = table.join(t1, t2, join_type='outer')
-        assert np.all(t12['b'].mask == [[True, False],
-                                        [False, True],
-                                        [False, False],
-                                        [True, True]])
-        assert np.all(t12['c'].mask == [[False, False],
-                                        [True, True],
-                                        [False, False],
-                                        [False, False]])
+        assert np.all(
+            t12['b'].mask
+            == [[True, False], [False, True], [False, False], [True, True]]
+        )
+        assert np.all(
+            t12['c'].mask
+            == [[False, False], [True, True], [False, False], [False, False]]
+        )
 
     def test_mixin_functionality(self, mixin_cols):
         col = mixin_cols['m']
@@ -568,14 +654,13 @@ class TestJoin():
             for join_type in ('outer', 'left', 'right'):
                 with pytest.raises(NotImplementedError) as err:
                     table.join(t1, t2, join_type=join_type)
-                assert ('join requires masking' in str(err.value)
-                        or 'join unavailable' in str(err.value))
+                assert 'join requires masking' in str(
+                    err.value
+                ) or 'join unavailable' in str(err.value)
 
     def test_cartesian_join(self, operation_table_type):
-        t1 = Table(rows=[(1, 'a'),
-                         (2, 'b')], names=['a', 'b'])
-        t2 = Table(rows=[(3, 'c'),
-                         (4, 'd')], names=['a', 'c'])
+        t1 = Table(rows=[(1, 'a'), (2, 'b')], names=['a', 'b'])
+        t2 = Table(rows=[(3, 'c'), (4, 'd')], names=['a', 'c'])
         t12 = table.join(t1, t2, join_type='cartesian')
 
         assert t1.colnames == ['a', 'b']
@@ -587,7 +672,8 @@ class TestJoin():
             '  1   a   3   c',
             '  1   a   4   d',
             '  2   b   3   c',
-            '  2   b   4   d']
+            '  2   b   4   d',
+        ]
 
         with pytest.raises(ValueError, match='cannot supply keys for a cartesian join'):
             t12 = table.join(t1, t2, join_type='cartesian', keys='a')
@@ -599,29 +685,32 @@ class TestJoin():
         t1 = Table([sc1], names=['sc'])
         t2 = Table([sc2], names=['sc'])
         t12 = table.join(t1, t2, join_funcs={'sc': join_skycoord(0.2 * u.deg)})
-        exp = ['sc_id   sc_1    sc_2  ',
-               '      deg,deg deg,deg ',
-               '----- ------- --------',
-               '    1 1.0,0.0 1.05,0.0',
-               '    1 1.1,0.0 1.05,0.0',
-               '    2 2.0,0.0  2.1,0.0']
+        exp = [
+            'sc_id   sc_1    sc_2  ',
+            '      deg,deg deg,deg ',
+            '----- ------- --------',
+            '    1 1.0,0.0 1.05,0.0',
+            '    1 1.1,0.0 1.05,0.0',
+            '    2 2.0,0.0  2.1,0.0',
+        ]
         assert str(t12).splitlines() == exp
 
     @pytest.mark.skipif('not HAS_SCIPY')
     @pytest.mark.parametrize('distance_func', ['search_around_3d', search_around_3d])
     def test_join_with_join_skycoord_3d(self, distance_func):
-        sc1 = SkyCoord([0, 1, 1.1, 2]*u.deg, [0, 0, 0, 0]*u.deg, [1, 1, 2, 1]*u.m)
-        sc2 = SkyCoord([0.5, 1.05, 2.1]*u.deg, [0, 0, 0]*u.deg, [1, 1, 1]*u.m)
+        sc1 = SkyCoord([0, 1, 1.1, 2] * u.deg, [0, 0, 0, 0] * u.deg, [1, 1, 2, 1] * u.m)
+        sc2 = SkyCoord([0.5, 1.05, 2.1] * u.deg, [0, 0, 0] * u.deg, [1, 1, 1] * u.m)
         t1 = Table([sc1], names=['sc'])
         t2 = Table([sc2], names=['sc'])
-        join_func = join_skycoord(np.deg2rad(0.2) * u.m,
-                                  distance_func=distance_func)
+        join_func = join_skycoord(np.deg2rad(0.2) * u.m, distance_func=distance_func)
         t12 = table.join(t1, t2, join_funcs={'sc': join_func})
-        exp = ['sc_id     sc_1        sc_2    ',
-               '       deg,deg,m   deg,deg,m  ',
-               '----- ----------- ------------',
-               '    1 1.0,0.0,1.0 1.05,0.0,1.0',
-               '    2 2.0,0.0,1.0  2.1,0.0,1.0']
+        exp = [
+            'sc_id     sc_1        sc_2    ',
+            '       deg,deg,m   deg,deg,m  ',
+            '----- ----------- ------------',
+            '    1 1.0,0.0,1.0 1.05,0.0,1.0',
+            '    2 2.0,0.0,1.0  2.1,0.0,1.0',
+        ]
         assert str(t12).splitlines() == exp
 
     @pytest.mark.skipif('not HAS_SCIPY')
@@ -630,17 +719,19 @@ class TestJoin():
         c2 = [0.5, 1.05, 2.1]
         t1 = Table([c1], names=['col'])
         t2 = Table([c2], names=['col'])
-        join_func = join_distance(0.2,
-                                  kdtree_args={'leafsize': 32},
-                                  query_args={'p': 2})
+        join_func = join_distance(
+            0.2, kdtree_args={'leafsize': 32}, query_args={'p': 2}
+        )
         t12 = table.join(t1, t2, join_type='outer', join_funcs={'col': join_func})
-        exp = ['col_id col_1 col_2',
-               '------ ----- -----',
-               '     1   1.0  1.05',
-               '     1   1.1  1.05',
-               '     2   2.0   2.1',
-               '     3   0.0    --',
-               '     4    --   0.5']
+        exp = [
+            'col_id col_1 col_2',
+            '------ ----- -----',
+            '     1   1.0  1.05',
+            '     1   1.1  1.05',
+            '     2   2.0   2.1',
+            '     3   0.0    --',
+            '     4    --   0.5',
+        ]
         assert str(t12).splitlines() == exp
 
     @pytest.mark.skipif('not HAS_SCIPY')
@@ -658,15 +749,17 @@ class TestJoin():
         join_func = join_distance(0.2)
         join_funcs = {'col': join_func}
         t12 = table.join(t1, t2, join_type='outer', join_funcs=join_funcs)
-        exp = ['col_id col_1  id  o1 col_2  o2',
-               '------ ----- --- --- ----- ---',
-               '     1   1.0   1   b    --  --',
-               '     1   1.1   2   c  1.05   y',
-               '     1   1.2   2   d  1.05   y',
-               '     2   2.0   3   e    --  --',
-               '     2    --   4  --   2.1   x',
-               '     3   0.0   0   a    --  --',
-               '     4    --   0  --   0.5   z']
+        exp = [
+            'col_id col_1  id  o1 col_2  o2',
+            '------ ----- --- --- ----- ---',
+            '     1   1.0   1   b    --  --',
+            '     1   1.1   2   c  1.05   y',
+            '     1   1.2   2   d  1.05   y',
+            '     2   2.0   3   e    --  --',
+            '     2    --   4  --   2.1   x',
+            '     3   0.0   0   a    --  --',
+            '     4    --   0  --   0.5   z',
+        ]
         assert str(t12).splitlines() == exp
 
         left, right, keys = _apply_join_funcs(t1, t2, ('col', 'id'), join_funcs)
@@ -680,46 +773,50 @@ class TestJoin():
         t2 = QTable([c2], names=['col'])
         join_func = join_distance(20 * u.cm)
         t12 = table.join(t1, t2, join_funcs={'col': join_func})
-        exp = ['col_id col_1 col_2 ',
-               '         m     mm  ',
-               '------ ----- ------',
-               '     1   1.0 1050.0',
-               '     1   1.1 1050.0',
-               '     2   2.0 2100.0']
+        exp = [
+            'col_id col_1 col_2 ',
+            '         m     mm  ',
+            '------ ----- ------',
+            '     1   1.0 1050.0',
+            '     1   1.1 1050.0',
+            '     2   2.0 2100.0',
+        ]
         assert str(t12).splitlines() == exp
 
         # Generate column name conflict
         t2['col_id'] = [0, 0, 0]
         t2['col__id'] = [0, 0, 0]
         t12 = table.join(t1, t2, join_funcs={'col': join_func})
-        exp = ['col___id col_1 col_2  col_id col__id',
-               '           m     mm                 ',
-               '-------- ----- ------ ------ -------',
-               '       1   1.0 1050.0      0       0',
-               '       1   1.1 1050.0      0       0',
-               '       2   2.0 2100.0      0       0']
+        exp = [
+            'col___id col_1 col_2  col_id col__id',
+            '           m     mm                 ',
+            '-------- ----- ------ ------ -------',
+            '       1   1.0 1050.0      0       0',
+            '       1   1.1 1050.0      0       0',
+            '       2   2.0 2100.0      0       0',
+        ]
         assert str(t12).splitlines() == exp
 
     @pytest.mark.skipif('not HAS_SCIPY')
     def test_join_with_join_distance_2d(self):
-        c1 = np.array([[0, 1, 1.1, 2],
-                       [0, 0, 1, 0]]).transpose()
-        c2 = np.array([[0.5, 1.05, 2.1],
-                       [0, 0, 0]]).transpose()
+        c1 = np.array([[0, 1, 1.1, 2], [0, 0, 1, 0]]).transpose()
+        c2 = np.array([[0.5, 1.05, 2.1], [0, 0, 0]]).transpose()
         t1 = Table([c1], names=['col'])
         t2 = Table([c2], names=['col'])
-        join_func = join_distance(0.2,
-                                  kdtree_args={'leafsize': 32},
-                                  query_args={'p': 2})
+        join_func = join_distance(
+            0.2, kdtree_args={'leafsize': 32}, query_args={'p': 2}
+        )
         t12 = table.join(t1, t2, join_type='outer', join_funcs={'col': join_func})
-        exp = ['col_id   col_1       col_2   ',
-               f'{t12["col_id"].dtype.name}  float64[2]  float64[2]',  # int32 or int64
-               '------ ---------- -----------',
-               '     1 1.0 .. 0.0 1.05 .. 0.0',
-               '     2 2.0 .. 0.0  2.1 .. 0.0',
-               '     3 0.0 .. 0.0    -- .. --',
-               '     4 1.1 .. 1.0    -- .. --',
-               '     5   -- .. --  0.5 .. 0.0']
+        exp = [
+            'col_id   col_1       col_2   ',
+            f'{t12["col_id"].dtype.name}  float64[2]  float64[2]',  # int32 or int64
+            '------ ---------- -----------',
+            '     1 1.0 .. 0.0 1.05 .. 0.0',
+            '     2 2.0 .. 0.0  2.1 .. 0.0',
+            '     3 0.0 .. 0.0    -- .. --',
+            '     4 1.1 .. 1.0    -- .. --',
+            '     5   -- .. --  0.5 .. 0.0',
+        ]
         assert t12.pformat(show_dtype=True) == exp
 
     def test_keys_left_right_basic(self):
@@ -749,8 +846,13 @@ class TestJoin():
                 keys_right_list.append([t2['y']])  # Test Column key column
 
             for keys_left, keys_right in zip(keys_left_list, keys_right_list):
-                t12 = table.join(t1, t2, keys_left=keys_left, keys_right=keys_right,
-                                 join_type=join_type)
+                t12 = table.join(
+                    t1,
+                    t2,
+                    keys_left=keys_left,
+                    keys_right=keys_right,
+                    join_type=join_type,
+                )
 
                 assert t12.colnames == t12_exp.colnames
                 for col in t12.values_equal(t12_exp).itercols():
@@ -792,37 +894,41 @@ class TestJoin():
     def test_join_structured_column(self):
         """Regression tests for gh-13271."""
         # Two tables with matching names, including a structured column.
-        t1 = Table([np.array([(1., 1), (2., 2)], dtype=[('f', 'f8'), ('i', 'i8')]),
-                    ['one', 'two']], names=['structured', 'string'])
-        t2 = Table([np.array([(2., 2), (4., 4)], dtype=[('f', 'f8'), ('i', 'i8')]),
-                    ['three', 'four']], names=['structured', 'string'])
+        t1 = Table(
+            [
+                np.array([(1.0, 1), (2.0, 2)], dtype=[('f', 'f8'), ('i', 'i8')]),
+                ['one', 'two'],
+            ],
+            names=['structured', 'string'],
+        )
+        t2 = Table(
+            [
+                np.array([(2.0, 2), (4.0, 4)], dtype=[('f', 'f8'), ('i', 'i8')]),
+                ['three', 'four'],
+            ],
+            names=['structured', 'string'],
+        )
         t12 = table.join(t1, t2, ['structured'], join_type='outer')
         assert t12.pformat() == [
             'structured [f, i] string_1 string_2',
             '----------------- -------- --------',
             '          (1., 1)      one       --',
             '          (2., 2)      two    three',
-            '          (4., 4)       --     four']
+            '          (4., 4)       --     four',
+        ]
 
 
-class TestSetdiff():
-
+class TestSetdiff:
     def _setup(self, t_cls=Table):
-        lines1 = [' a   b ',
-                  '  0 foo ',
-                  '  1 foo ',
-                  '  1 bar ',
-                  '  2 bar ']
-        lines2 = [' a   b ',
-                  '  0 foo ',
-                  '  3 foo ',
-                  '  4 bar ',
-                  '  2 bar ']
-        lines3 = [' a   b   d ',
-                  '  0 foo  R1',
-                  '  8 foo  R2',
-                  '  1 bar  R3',
-                  '  4 bar  R4']
+        lines1 = [' a   b ', '  0 foo ', '  1 foo ', '  1 bar ', '  2 bar ']
+        lines2 = [' a   b ', '  0 foo ', '  3 foo ', '  4 bar ', '  2 bar ']
+        lines3 = [
+            ' a   b   d ',
+            '  0 foo  R1',
+            '  8 foo  R2',
+            '  1 bar  R3',
+            '  4 bar  R4',
+        ]
         self.t1 = t_cls.read(lines1, format='ascii')
         self.t2 = t_cls.read(lines2, format='ascii')
         self.t3 = t_cls.read(lines3, format='ascii')
@@ -832,10 +938,7 @@ class TestSetdiff():
         out = table.setdiff(self.t1, self.t2)
         assert type(out['a']) is type(self.t1['a'])  # noqa
         assert type(out['b']) is type(self.t1['b'])  # noqa
-        assert out.pformat() == [' a   b ',
-                                 '--- ---',
-                                 '  1 bar',
-                                 '  1 foo']
+        assert out.pformat() == [' a   b ', '--- ---', '  1 bar', '  1 foo']
 
     def test_default_same_tables(self, operation_table_type):
         self._setup(operation_table_type)
@@ -843,8 +946,7 @@ class TestSetdiff():
 
         assert type(out['a']) is type(self.t1['a'])  # noqa
         assert type(out['b']) is type(self.t1['b'])  # noqa
-        assert out.pformat() == [' a   b ',
-                                 '--- ---']
+        assert out.pformat() == [' a   b ', '--- ---']
 
     def test_extra_col_left_table(self, operation_table_type):
         self._setup(operation_table_type)
@@ -858,10 +960,7 @@ class TestSetdiff():
 
         assert type(out['a']) is type(self.t1['a'])  # noqa
         assert type(out['b']) is type(self.t1['b'])  # noqa
-        assert out.pformat() == [' a   b ',
-                                 '--- ---',
-                                 '  1 foo',
-                                 '  2 bar']
+        assert out.pformat() == [' a   b ', '--- ---', '  1 foo', '  2 bar']
 
     def test_keys(self, operation_table_type):
         self._setup(operation_table_type)
@@ -869,10 +968,12 @@ class TestSetdiff():
 
         assert type(out['a']) is type(self.t1['a'])  # noqa
         assert type(out['b']) is type(self.t1['b'])  # noqa
-        assert out.pformat() == [' a   b   d ',
-                                 '--- --- ---',
-                                 '  4 bar  R4',
-                                 '  8 foo  R2']
+        assert out.pformat() == [
+            ' a   b   d ',
+            '--- --- ---',
+            '  4 bar  R4',
+            '  8 foo  R2',
+        ]
 
     def test_missing_key(self, operation_table_type):
         self._setup(operation_table_type)
@@ -881,21 +982,17 @@ class TestSetdiff():
             table.setdiff(self.t3, self.t1, keys=['a', 'd'])
 
 
-class TestVStack():
-
+class TestVStack:
     def _setup(self, t_cls=Table):
-        self.t1 = t_cls.read([' a   b',
-                              ' 0. foo',
-                              ' 1. bar'], format='ascii')
+        self.t1 = t_cls.read([' a   b', ' 0. foo', ' 1. bar'], format='ascii')
 
-        self.t2 = t_cls.read([' a    b   c',
-                              ' 2.  pez  4',
-                              ' 3.  sez  5'], format='ascii')
+        self.t2 = t_cls.read(
+            [' a    b   c', ' 2.  pez  4', ' 3.  sez  5'], format='ascii'
+        )
 
-        self.t3 = t_cls.read([' a    b',
-                              ' 4.   7',
-                              ' 5.   8',
-                              ' 6.   9'], format='ascii')
+        self.t3 = t_cls.read(
+            [' a    b', ' 4.   7', ' 5.   8', ' 6.   9'], format='ascii'
+        )
         self.t4 = t_cls(self.t1, copy=True, masked=t_cls is Table)
 
         # The following table has meta-data that conflicts with t1
@@ -905,11 +1002,15 @@ class TestVStack():
         self.t2.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
         self.t4.meta.update(OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)]))
         self.t5.meta.update(OrderedDict([('b', 3), ('c', 'k'), ('d', 1)]))
-        self.meta_merge = OrderedDict([('b', [1, 2, 3, 4, 5, 6]),
-                                       ('c', {'a': 1, 'b': 1, 'c': 1}),
-                                       ('d', 1),
-                                       ('a', 1),
-                                       ('e', 1)])
+        self.meta_merge = OrderedDict(
+            [
+                ('b', [1, 2, 3, 4, 5, 6]),
+                ('c', {'a': 1, 'b': 1, 'c': 1}),
+                ('d', 1),
+                ('a', 1),
+                ('e', 1),
+            ]
+        )
 
     def test_validate_join_type(self):
         self._setup()
@@ -923,11 +1024,7 @@ class TestVStack():
         out = table.vstack([self.t1, t2[1]])
         assert type(out['a']) is type(self.t1['a'])  # noqa
         assert type(out['b']) is type(self.t1['b'])  # noqa
-        assert out.pformat() == [' a   b ',
-                                 '--- ---',
-                                 '0.0 foo',
-                                 '1.0 bar',
-                                 '1.0 bar']
+        assert out.pformat() == [' a   b ', '--- ---', '0.0 foo', '1.0 bar', '1.0 bar']
 
     def test_stack_table_column(self, operation_table_type):
         self._setup(operation_table_type)
@@ -935,12 +1032,14 @@ class TestVStack():
         t2.meta.clear()
         out = table.vstack([self.t1, t2['a']])
         assert out.masked is False
-        assert out.pformat() == [' a   b ',
-                                 '--- ---',
-                                 '0.0 foo',
-                                 '1.0 bar',
-                                 '0.0  --',
-                                 '1.0  --']
+        assert out.pformat() == [
+            ' a   b ',
+            '--- ---',
+            '0.0 foo',
+            '1.0 bar',
+            '0.0  --',
+            '1.0  --',
+        ]
 
     def test_table_meta_merge(self, operation_table_type):
         self._setup(operation_table_type)
@@ -957,20 +1056,28 @@ class TestVStack():
         assert out.meta == self.t5.meta
 
         with pytest.warns(metadata.MergeConflictWarning) as w:
-            out = table.vstack([self.t1, self.t5], join_type='inner', metadata_conflicts='warn')
+            out = table.vstack(
+                [self.t1, self.t5], join_type='inner', metadata_conflicts='warn'
+            )
         assert len(w) == 2
 
         assert out.meta == self.t5.meta
 
-        out = table.vstack([self.t1, self.t5], join_type='inner', metadata_conflicts='silent')
+        out = table.vstack(
+            [self.t1, self.t5], join_type='inner', metadata_conflicts='silent'
+        )
 
         assert out.meta == self.t5.meta
 
         with pytest.raises(MergeConflictError):
-            out = table.vstack([self.t1, self.t5], join_type='inner', metadata_conflicts='error')
+            out = table.vstack(
+                [self.t1, self.t5], join_type='inner', metadata_conflicts='error'
+            )
 
         with pytest.raises(ValueError):
-            out = table.vstack([self.t1, self.t5], join_type='inner', metadata_conflicts='nonsense')
+            out = table.vstack(
+                [self.t1, self.t5], join_type='inner', metadata_conflicts='nonsense'
+            )
 
     def test_bad_input_type(self, operation_table_type):
         self._setup(operation_table_type)
@@ -994,25 +1101,29 @@ class TestVStack():
         assert type(t12) is operation_table_type
         assert type(t12['a']) is type(t1['a'])  # noqa
         assert type(t12['b']) is type(t1['b'])  # noqa
-        assert t12.pformat() == [' a   b ',
-                                 '--- ---',
-                                 '0.0 foo',
-                                 '1.0 bar',
-                                 '2.0 pez',
-                                 '3.0 sez']
+        assert t12.pformat() == [
+            ' a   b ',
+            '--- ---',
+            '0.0 foo',
+            '1.0 bar',
+            '2.0 pez',
+            '3.0 sez',
+        ]
 
         t124 = table.vstack([t1, t2, t4], join_type='inner')
         assert type(t124) is operation_table_type
         assert type(t12['a']) is type(t1['a'])  # noqa
         assert type(t12['b']) is type(t1['b'])  # noqa
-        assert t124.pformat() == [' a   b ',
-                                  '--- ---',
-                                  '0.0 foo',
-                                  '1.0 bar',
-                                  '2.0 pez',
-                                  '3.0 sez',
-                                  '0.0 foo',
-                                  '1.0 bar']
+        assert t124.pformat() == [
+            ' a   b ',
+            '--- ---',
+            '0.0 foo',
+            '1.0 bar',
+            '2.0 pez',
+            '3.0 sez',
+            '0.0 foo',
+            '1.0 bar',
+        ]
 
     def test_stack_basic_outer(self, operation_table_type):
         if operation_table_type is QTable:
@@ -1023,31 +1134,35 @@ class TestVStack():
         t4 = self.t4
         t12 = table.vstack([t1, t2], join_type='outer')
         assert t12.masked is False
-        assert t12.pformat() == [' a   b   c ',
-                                 '--- --- ---',
-                                 '0.0 foo  --',
-                                 '1.0 bar  --',
-                                 '2.0 pez   4',
-                                 '3.0 sez   5']
+        assert t12.pformat() == [
+            ' a   b   c ',
+            '--- --- ---',
+            '0.0 foo  --',
+            '1.0 bar  --',
+            '2.0 pez   4',
+            '3.0 sez   5',
+        ]
 
         t124 = table.vstack([t1, t2, t4], join_type='outer')
         assert t124.masked is False
-        assert t124.pformat() == [' a   b   c ',
-                                  '--- --- ---',
-                                  '0.0 foo  --',
-                                  '1.0 bar  --',
-                                  '2.0 pez   4',
-                                  '3.0 sez   5',
-                                  '0.0 foo  --',
-                                  '1.0 bar  --']
+        assert t124.pformat() == [
+            ' a   b   c ',
+            '--- --- ---',
+            '0.0 foo  --',
+            '1.0 bar  --',
+            '2.0 pez   4',
+            '3.0 sez   5',
+            '0.0 foo  --',
+            '1.0 bar  --',
+        ]
 
     def test_stack_incompatible(self, operation_table_type):
         self._setup(operation_table_type)
         with pytest.raises(TableMergeError) as excinfo:
             table.vstack([self.t1, self.t3], join_type='inner')
-        assert ("The 'b' columns have incompatible types: {}"
-                .format([self.t1['b'].dtype.name, self.t3['b'].dtype.name])
-                in str(excinfo.value))
+        assert "The 'b' columns have incompatible types: {}".format(
+            [self.t1['b'].dtype.name, self.t3['b'].dtype.name]
+        ) in str(excinfo.value)
 
         with pytest.raises(TableMergeError) as excinfo:
             table.vstack([self.t1, self.t3], join_type='outer')
@@ -1071,12 +1186,14 @@ class TestVStack():
         t4['b'].mask[1] = True
         t14 = table.vstack([t1, t4])
         assert t14.masked is False
-        assert t14.pformat() == [' a   b ',
-                                 '--- ---',
-                                 '0.0 foo',
-                                 '1.0 bar',
-                                 '0.0 foo',
-                                 '1.0  --']
+        assert t14.pformat() == [
+            ' a   b ',
+            '--- ---',
+            '0.0 foo',
+            '1.0 bar',
+            '0.0 foo',
+            '1.0  --',
+        ]
 
     def test_col_meta_merge_inner(self, operation_table_type):
         self._setup(operation_table_type)
@@ -1101,12 +1218,20 @@ class TestVStack():
         t4['b'].info.format = '%6s'
 
         # Key col 'a', should be merged meta
-        t1['a'].info.meta.update(OrderedDict([('b', [1, 2]), ('c', {'a': 1}), ('d', 1)]))
-        t2['a'].info.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
-        t4['a'].info.meta.update(OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)]))
+        t1['a'].info.meta.update(
+            OrderedDict([('b', [1, 2]), ('c', {'a': 1}), ('d', 1)])
+        )
+        t2['a'].info.meta.update(
+            OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        )
+        t4['a'].info.meta.update(
+            OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)])
+        )
 
         # Key col 'b', should be meta2
-        t2['b'].info.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
+        t2['b'].info.meta.update(
+            OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        )
 
         if operation_table_type is Table:
             ctx = pytest.warns(metadata.MergeConflictWarning)
@@ -1118,37 +1243,47 @@ class TestVStack():
 
         if operation_table_type is Table:
             assert len(warning_lines) == 2
-            assert ("In merged column 'a' the 'unit' attribute does not match (cm != m)"
-                    in str(warning_lines[0].message))
-            assert ("In merged column 'a' the 'unit' attribute does not match (m != km)"
-                    in str(warning_lines[1].message))
+            assert (
+                "In merged column 'a' the 'unit' attribute does not match (cm != m)"
+                in str(warning_lines[0].message)
+            )
+            assert (
+                "In merged column 'a' the 'unit' attribute does not match (m != km)"
+                in str(warning_lines[1].message)
+            )
             # Check units are suitably ignored for a regular Table
-            assert out.pformat() == ['   a       b   ',
-                                     '   km          ',
-                                     '-------- ------',
-                                     '0.000000    foo',
-                                     '1.000000    bar',
-                                     '2.000000    pez',
-                                     '3.000000    sez',
-                                     '0.000000    foo',
-                                     '1.000000    bar']
+            assert out.pformat() == [
+                '   a       b   ',
+                '   km          ',
+                '-------- ------',
+                '0.000000    foo',
+                '1.000000    bar',
+                '2.000000    pez',
+                '3.000000    sez',
+                '0.000000    foo',
+                '1.000000    bar',
+            ]
         else:
             # Check QTable correctly dealt with units.
-            assert out.pformat() == ['   a       b   ',
-                                     '   km          ',
-                                     '-------- ------',
-                                     '0.000000    foo',
-                                     '0.000010    bar',
-                                     '0.002000    pez',
-                                     '0.003000    sez',
-                                     '0.000000    foo',
-                                     '1.000000    bar']
+            assert out.pformat() == [
+                '   a       b   ',
+                '   km          ',
+                '-------- ------',
+                '0.000000    foo',
+                '0.000010    bar',
+                '0.002000    pez',
+                '0.003000    sez',
+                '0.000000    foo',
+                '1.000000    bar',
+            ]
         assert out['a'].info.unit == 'km'
         assert out['a'].info.format == '%f'
         assert out['b'].info.description == 't1_b'
         assert out['b'].info.format == '%6s'
         assert out['a'].info.meta == self.meta_merge
-        assert out['b'].info.meta == OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        assert out['b'].info.meta == OrderedDict(
+            [('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]
+        )
 
     def test_col_meta_merge_outer(self, operation_table_type):
         if operation_table_type is QTable:
@@ -1175,12 +1310,20 @@ class TestVStack():
         t4['b'].info.format = '%6s'
 
         # Key col 'a', should be merged meta
-        t1['a'].info.meta.update(OrderedDict([('b', [1, 2]), ('c', {'a': 1}), ('d', 1)]))
-        t2['a'].info.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
-        t4['a'].info.meta.update(OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)]))
+        t1['a'].info.meta.update(
+            OrderedDict([('b', [1, 2]), ('c', {'a': 1}), ('d', 1)])
+        )
+        t2['a'].info.meta.update(
+            OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        )
+        t4['a'].info.meta.update(
+            OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)])
+        )
 
         # Key col 'b', should be meta2
-        t2['b'].info.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
+        t2['b'].info.meta.update(
+            OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        )
 
         # All these should pass through
         t2['c'].unit = 'm'
@@ -1191,16 +1334,22 @@ class TestVStack():
             out = table.vstack([t1, t2, t4], join_type='outer')
 
         assert len(warning_lines) == 2
-        assert ("In merged column 'a' the 'unit' attribute does not match (cm != m)"
-                in str(warning_lines[0].message))
-        assert ("In merged column 'a' the 'unit' attribute does not match (m != km)"
-                in str(warning_lines[1].message))
+        assert (
+            "In merged column 'a' the 'unit' attribute does not match (cm != m)"
+            in str(warning_lines[0].message)
+        )
+        assert (
+            "In merged column 'a' the 'unit' attribute does not match (m != km)"
+            in str(warning_lines[1].message)
+        )
         assert out['a'].unit == 'km'
         assert out['a'].info.format == '%0d'
         assert out['b'].info.description == 't1_b'
         assert out['b'].info.format == '%6s'
         assert out['a'].info.meta == self.meta_merge
-        assert out['b'].info.meta == OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        assert out['b'].info.meta == OrderedDict(
+            [('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]
+        )
         assert out['c'].info.unit == 'm'
         assert out['c'].info.format == '%6s'
         assert out['c'].info.description == 't2_c'
@@ -1218,8 +1367,17 @@ class TestVStack():
         cls_name = type(col).__name__
 
         # Vstack works for these classes:
-        if isinstance(col, (u.Quantity, Time, TimeDelta, SkyCoord, EarthLocation,
-                            BaseRepresentationOrDifferential)):
+        if isinstance(
+            col,
+            (
+                u.Quantity,
+                Time,
+                TimeDelta,
+                SkyCoord,
+                EarthLocation,
+                BaseRepresentationOrDifferential,
+            ),
+        ):
             out = table.vstack([t, t])
             assert len(out) == len_col * 2
             if cls_name == 'SkyCoord':
@@ -1235,8 +1393,9 @@ class TestVStack():
         else:
             with pytest.raises(NotImplementedError) as err:
                 table.vstack([t, t])
-            assert ('vstack unavailable for mixin column type(s): {}'
-                    .format(cls_name) in str(err.value))
+            assert 'vstack unavailable for mixin column type(s): {}'.format(
+                cls_name
+            ) in str(err.value)
 
         # Check for outer stack which requires masking.  Only Time supports
         # this currently.
@@ -1255,22 +1414,23 @@ class TestVStack():
         else:
             with pytest.raises(NotImplementedError) as err:
                 table.vstack([t, t2], join_type='outer')
-            assert ('vstack requires masking' in str(err.value)
-                    or 'vstack unavailable' in str(err.value))
+            assert 'vstack requires masking' in str(
+                err.value
+            ) or 'vstack unavailable' in str(err.value)
 
     def test_vstack_different_representation(self):
         """Test that representations can be mixed together."""
-        rep1 = CartesianRepresentation([1, 2]*u.km, [3, 4]*u.km, 1*u.km)
-        rep2 = SphericalRepresentation([0]*u.deg, [0]*u.deg, 10*u.km)
+        rep1 = CartesianRepresentation([1, 2] * u.km, [3, 4] * u.km, 1 * u.km)
+        rep2 = SphericalRepresentation([0] * u.deg, [0] * u.deg, 10 * u.km)
         t1 = Table([rep1])
         t2 = Table([rep2])
         t12 = table.vstack([t1, t2])
-        expected = CartesianRepresentation([1, 2, 10]*u.km,
-                                           [3, 4, 0]*u.km,
-                                           [1, 1, 0]*u.km)
+        expected = CartesianRepresentation(
+            [1, 2, 10] * u.km, [3, 4, 0] * u.km, [1, 1, 0] * u.km
+        )
         assert np.all(representation_equal(t12['col0'], expected))
 
-        rep3 = UnitSphericalRepresentation([0]*u.deg, [0]*u.deg)
+        rep3 = UnitSphericalRepresentation([0] * u.deg, [0] * u.deg)
         t3 = Table([rep3])
         with pytest.raises(ValueError, match='representations are inconsistent'):
             table.vstack([t1, t3])
@@ -1278,10 +1438,20 @@ class TestVStack():
     def test_vstack_structured_column(self):
         """Regression tests for gh-13271."""
         # Two tables with matching names, including a structured column.
-        t1 = Table([np.array([(1., 1), (2., 2)], dtype=[('f', 'f8'), ('i', 'i8')]),
-                    ['one', 'two']], names=['structured', 'string'])
-        t2 = Table([np.array([(3., 3), (4., 4)], dtype=[('f', 'f8'), ('i', 'i8')]),
-                    ['three', 'four']], names=['structured', 'string'])
+        t1 = Table(
+            [
+                np.array([(1.0, 1), (2.0, 2)], dtype=[('f', 'f8'), ('i', 'i8')]),
+                ['one', 'two'],
+            ],
+            names=['structured', 'string'],
+        )
+        t2 = Table(
+            [
+                np.array([(3.0, 3), (4.0, 4)], dtype=[('f', 'f8'), ('i', 'i8')]),
+                ['three', 'four'],
+            ],
+            names=['structured', 'string'],
+        )
         t12 = table.vstack([t1, t2])
         assert t12.pformat() == [
             'structured [f, i] string',
@@ -1289,7 +1459,8 @@ class TestVStack():
             '          (1., 1)    one',
             '          (2., 2)    two',
             '          (3., 3)  three',
-            '          (4., 4)   four']
+            '          (4., 4)   four',
+        ]
 
         # One table without the structured column.
         t3 = t2[('string',)]
@@ -1300,34 +1471,33 @@ class TestVStack():
             '         (1.0, 1)    one',
             '         (2.0, 2)    two',
             '               --  three',
-            '               --   four']
+            '               --   four',
+        ]
 
 
-class TestDStack():
-
+class TestDStack:
     def _setup(self, t_cls=Table):
-        self.t1 = t_cls.read([' a   b',
-                              ' 0. foo',
-                              ' 1. bar'], format='ascii')
+        self.t1 = t_cls.read([' a   b', ' 0. foo', ' 1. bar'], format='ascii')
 
-        self.t2 = t_cls.read([' a    b   c',
-                              ' 2.  pez  4',
-                              ' 3.  sez  5'], format='ascii')
+        self.t2 = t_cls.read(
+            [' a    b   c', ' 2.  pez  4', ' 3.  sez  5'], format='ascii'
+        )
         self.t2['d'] = Time([1, 2], format='cxcsec')
 
-        self.t3 = t_cls({'a': [[5., 6.], [4., 3.]],
-                         'b': [['foo', 'bar'], ['pez', 'sez']]},
-                        names=('a', 'b'))
+        self.t3 = t_cls(
+            {'a': [[5.0, 6.0], [4.0, 3.0]], 'b': [['foo', 'bar'], ['pez', 'sez']]},
+            names=('a', 'b'),
+        )
 
         self.t4 = t_cls(self.t1, copy=True, masked=t_cls is Table)
 
-        self.t5 = t_cls({'a': [[4., 2.], [1., 6.]],
-                         'b': [['foo', 'pez'], ['bar', 'sez']]},
-                        names=('a', 'b'))
-        self.t6 = t_cls.read([' a    b   c',
-                              ' 7.  pez  2',
-                              ' 4.  sez  6',
-                              ' 6.  foo  3'], format='ascii')
+        self.t5 = t_cls(
+            {'a': [[4.0, 2.0], [1.0, 6.0]], 'b': [['foo', 'pez'], ['bar', 'sez']]},
+            names=('a', 'b'),
+        )
+        self.t6 = t_cls.read(
+            [' a    b   c', ' 7.  pez  2', ' 4.  sez  6', ' 6.  foo  3'], format='ascii'
+        )
 
     def test_validate_join_type(self):
         self._setup()
@@ -1356,8 +1526,7 @@ class TestDStack():
                     assert np.all(out[name].mask[:, ii])
 
     def test_dstack_table_column(self, operation_table_type):
-        """Stack a table with 3 cols and one column (gets auto-converted to Table).
-        """
+        """Stack a table with 3 cols and one column (gets auto-converted to Table)."""
         self._setup(operation_table_type)
         t2 = self.t1.copy()
         out = table.dstack([self.t1, t2['a']])
@@ -1425,8 +1594,8 @@ class TestDStack():
         assert np.all(out == self.t1)
 
     def test_dstack_representation(self):
-        rep1 = SphericalRepresentation([1, 2]*u.deg, [3, 4]*u.deg, 1*u.kpc)
-        rep2 = SphericalRepresentation([10, 20]*u.deg, [30, 40]*u.deg, 10*u.kpc)
+        rep1 = SphericalRepresentation([1, 2] * u.deg, [3, 4] * u.deg, 1 * u.kpc)
+        rep2 = SphericalRepresentation([10, 20] * u.deg, [30, 40] * u.deg, 10 * u.kpc)
         t1 = Table([rep1])
         t2 = Table([rep2])
         t12 = table.dstack([t1, t2])
@@ -1434,8 +1603,8 @@ class TestDStack():
         assert np.all(representation_equal(t12['col0'][:, 1], rep2))
 
     def test_dstack_skycoord(self):
-        sc1 = SkyCoord([1, 2]*u.deg, [3, 4]*u.deg)
-        sc2 = SkyCoord([10, 20]*u.deg, [30, 40]*u.deg)
+        sc1 = SkyCoord([1, 2] * u.deg, [3, 4] * u.deg)
+        sc2 = SkyCoord([10, 20] * u.deg, [30, 40] * u.deg)
         t1 = Table([sc1])
         t2 = Table([sc2])
         t12 = table.dstack([t1, t2])
@@ -1445,16 +1614,27 @@ class TestDStack():
     def test_dstack_structured_column(self):
         """Regression tests for gh-13271."""
         # Two tables with matching names, including a structured column.
-        t1 = Table([np.array([(1., 1), (2., 2)], dtype=[('f', 'f8'), ('i', 'i8')]),
-                    ['one', 'two']], names=['structured', 'string'])
-        t2 = Table([np.array([(3., 3), (4., 4)], dtype=[('f', 'f8'), ('i', 'i8')]),
-                    ['three', 'four']], names=['structured', 'string'])
+        t1 = Table(
+            [
+                np.array([(1.0, 1), (2.0, 2)], dtype=[('f', 'f8'), ('i', 'i8')]),
+                ['one', 'two'],
+            ],
+            names=['structured', 'string'],
+        )
+        t2 = Table(
+            [
+                np.array([(3.0, 3), (4.0, 4)], dtype=[('f', 'f8'), ('i', 'i8')]),
+                ['three', 'four'],
+            ],
+            names=['structured', 'string'],
+        )
         t12 = table.dstack([t1, t2])
         assert t12.pformat() == [
             'structured [f, i]     string   ',
             '------------------ ------------',
             '(1., 1) .. (3., 3) one .. three',
-            '(2., 2) .. (4., 4)  two .. four']
+            '(2., 2) .. (4., 4)  two .. four',
+        ]
 
         # One table without the structured column.
         t3 = t2[('string',)]
@@ -1463,24 +1643,21 @@ class TestDStack():
             'structured [f, i]    string   ',
             '----------------- ------------',
             '   (1.0, 1) .. -- one .. three',
-            '   (2.0, 2) .. --  two .. four']
+            '   (2.0, 2) .. --  two .. four',
+        ]
 
 
-class TestHStack():
-
+class TestHStack:
     def _setup(self, t_cls=Table):
-        self.t1 = t_cls.read([' a    b',
-                              ' 0. foo',
-                              ' 1. bar'], format='ascii')
+        self.t1 = t_cls.read([' a    b', ' 0. foo', ' 1. bar'], format='ascii')
 
-        self.t2 = t_cls.read([' a    b   c',
-                              ' 2.  pez  4',
-                              ' 3.  sez  5'], format='ascii')
+        self.t2 = t_cls.read(
+            [' a    b   c', ' 2.  pez  4', ' 3.  sez  5'], format='ascii'
+        )
 
-        self.t3 = t_cls.read([' d    e',
-                              ' 4.   7',
-                              ' 5.   8',
-                              ' 6.   9'], format='ascii')
+        self.t3 = t_cls.read(
+            [' d    e', ' 4.   7', ' 5.   8', ' 6.   9'], format='ascii'
+        )
         self.t4 = t_cls(self.t1, copy=True, masked=True)
         self.t4['a'].name = 'f'
         self.t4['b'].name = 'g'
@@ -1492,11 +1669,15 @@ class TestHStack():
         self.t2.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
         self.t4.meta.update(OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)]))
         self.t5.meta.update(OrderedDict([('b', 3), ('c', 'k'), ('d', 1)]))
-        self.meta_merge = OrderedDict([('b', [1, 2, 3, 4, 5, 6]),
-                                       ('c', {'a': 1, 'b': 1, 'c': 1}),
-                                       ('d', 1),
-                                       ('a', 1),
-                                       ('e', 1)])
+        self.meta_merge = OrderedDict(
+            [
+                ('b', [1, 2, 3, 4, 5, 6]),
+                ('c', {'a': 1, 'b': 1, 'c': 1}),
+                ('d', 1),
+                ('a', 1),
+                ('e', 1),
+            ]
+        )
 
     def test_validate_join_type(self):
         self._setup()
@@ -1511,18 +1692,22 @@ class TestHStack():
         self._setup(operation_table_type)
         out = table.hstack([self.t1, self.t1])
         assert out.masked is False
-        assert out.pformat() == ['a_1 b_1 a_2 b_2',
-                                 '--- --- --- ---',
-                                 '0.0 foo 0.0 foo',
-                                 '1.0 bar 1.0 bar']
+        assert out.pformat() == [
+            'a_1 b_1 a_2 b_2',
+            '--- --- --- ---',
+            '0.0 foo 0.0 foo',
+            '1.0 bar 1.0 bar',
+        ]
 
     def test_stack_rows(self, operation_table_type):
         self._setup(operation_table_type)
         out = table.hstack([self.t1[0], self.t2[1]])
         assert out.masked is False
-        assert out.pformat() == ['a_1 b_1 a_2 b_2  c ',
-                                 '--- --- --- --- ---',
-                                 '0.0 foo 3.0 sez   5']
+        assert out.pformat() == [
+            'a_1 b_1 a_2 b_2  c ',
+            '--- --- --- --- ---',
+            '0.0 foo 3.0 sez   5',
+        ]
 
     def test_stack_columns(self, operation_table_type):
         self._setup(operation_table_type)
@@ -1530,10 +1715,12 @@ class TestHStack():
         assert type(out['a']) is type(self.t1['a'])  # noqa
         assert type(out['b']) is type(self.t1['b'])  # noqa
         assert type(out['c']) is type(self.t2['c'])  # noqa
-        assert out.pformat() == [' a   b   c ',
-                                 '--- --- ---',
-                                 '0.0 foo   4',
-                                 '1.0 bar   5']
+        assert out.pformat() == [
+            ' a   b   c ',
+            '--- --- ---',
+            '0.0 foo   4',
+            '1.0 bar   5',
+        ]
 
     def test_table_meta_merge(self, operation_table_type):
         self._setup(operation_table_type)
@@ -1550,20 +1737,28 @@ class TestHStack():
         assert out.meta == self.t5.meta
 
         with pytest.warns(metadata.MergeConflictWarning) as w:
-            out = table.hstack([self.t1, self.t5], join_type='inner', metadata_conflicts='warn')
+            out = table.hstack(
+                [self.t1, self.t5], join_type='inner', metadata_conflicts='warn'
+            )
         assert len(w) == 2
 
         assert out.meta == self.t5.meta
 
-        out = table.hstack([self.t1, self.t5], join_type='inner', metadata_conflicts='silent')
+        out = table.hstack(
+            [self.t1, self.t5], join_type='inner', metadata_conflicts='silent'
+        )
 
         assert out.meta == self.t5.meta
 
         with pytest.raises(MergeConflictError):
-            out = table.hstack([self.t1, self.t5], join_type='inner', metadata_conflicts='error')
+            out = table.hstack(
+                [self.t1, self.t5], join_type='inner', metadata_conflicts='error'
+            )
 
         with pytest.raises(ValueError):
-            out = table.hstack([self.t1, self.t5], join_type='inner', metadata_conflicts='nonsense')
+            out = table.hstack(
+                [self.t1, self.t5], join_type='inner', metadata_conflicts='nonsense'
+            )
 
     def test_bad_input_type(self, operation_table_type):
         self._setup(operation_table_type)
@@ -1590,10 +1785,12 @@ class TestHStack():
         assert type(out['b_1']) is type(t1['b'])  # noqa
         assert type(out['a_2']) is type(t2['a'])  # noqa
         assert type(out['b_2']) is type(t2['b'])  # noqa
-        assert out.pformat() == ['a_1 b_1 a_2 b_2  c ',
-                                 '--- --- --- --- ---',
-                                 '0.0 foo 2.0 pez   4',
-                                 '1.0 bar 3.0 sez   5']
+        assert out.pformat() == [
+            'a_1 b_1 a_2 b_2  c ',
+            '--- --- --- --- ---',
+            '0.0 foo 2.0 pez   4',
+            '1.0 bar 3.0 sez   5',
+        ]
 
         # stacking as a list gives same result
         out_list = table.hstack([t1, t2], join_type='inner')
@@ -1604,18 +1801,22 @@ class TestHStack():
 
         out = table.hstack([t1, t2, t3, t4], join_type='outer')
         assert out.masked is False
-        assert out.pformat() == ['a_1 b_1 a_2 b_2  c   d   e   f   g ',
-                                 '--- --- --- --- --- --- --- --- ---',
-                                 '0.0 foo 2.0 pez   4 4.0   7 0.0 foo',
-                                 '1.0 bar 3.0 sez   5 5.0   8 1.0 bar',
-                                 ' --  --  --  --  -- 6.0   9  --  --']
+        assert out.pformat() == [
+            'a_1 b_1 a_2 b_2  c   d   e   f   g ',
+            '--- --- --- --- --- --- --- --- ---',
+            '0.0 foo 2.0 pez   4 4.0   7 0.0 foo',
+            '1.0 bar 3.0 sez   5 5.0   8 1.0 bar',
+            ' --  --  --  --  -- 6.0   9  --  --',
+        ]
 
         out = table.hstack([t1, t2, t3, t4], join_type='inner')
         assert out.masked is False
-        assert out.pformat() == ['a_1 b_1 a_2 b_2  c   d   e   f   g ',
-                                 '--- --- --- --- --- --- --- --- ---',
-                                 '0.0 foo 2.0 pez   4 4.0   7 0.0 foo',
-                                 '1.0 bar 3.0 sez   5 5.0   8 1.0 bar']
+        assert out.pformat() == [
+            'a_1 b_1 a_2 b_2  c   d   e   f   g ',
+            '--- --- --- --- --- --- --- --- ---',
+            '0.0 foo 2.0 pez   4 4.0   7 0.0 foo',
+            '1.0 bar 3.0 sez   5 5.0   8 1.0 bar',
+        ]
 
     def test_stack_incompatible(self, operation_table_type):
         self._setup(operation_table_type)
@@ -1633,21 +1834,28 @@ class TestHStack():
         t2.meta.clear()
         t2['b'].mask[1] = True
         out = table.hstack([t1, t2])
-        assert out.pformat() == ['a_1 b_1 a_2 b_2',
-                                 '--- --- --- ---',
-                                 '0.0 foo 0.0 foo',
-                                 '1.0 bar 1.0  --']
+        assert out.pformat() == [
+            'a_1 b_1 a_2 b_2',
+            '--- --- --- ---',
+            '0.0 foo 0.0 foo',
+            '1.0 bar 1.0  --',
+        ]
 
     def test_table_col_rename(self, operation_table_type):
         self._setup(operation_table_type)
-        out = table.hstack([self.t1, self.t2], join_type='inner',
-                           uniq_col_name='{table_name}_{col_name}',
-                           table_names=('left', 'right'))
+        out = table.hstack(
+            [self.t1, self.t2],
+            join_type='inner',
+            uniq_col_name='{table_name}_{col_name}',
+            table_names=('left', 'right'),
+        )
         assert out.masked is False
-        assert out.pformat() == ['left_a left_b right_a right_b  c ',
-                                 '------ ------ ------- ------- ---',
-                                 '   0.0    foo     2.0     pez   4',
-                                 '   1.0    bar     3.0     sez   5']
+        assert out.pformat() == [
+            'left_a left_b right_a right_b  c ',
+            '------ ------ ------- ------- ---',
+            '   0.0    foo     2.0     pez   4',
+            '   1.0    bar     3.0     sez   5',
+        ]
 
     def test_col_meta_merge(self, operation_table_type):
         self._setup(operation_table_type)
@@ -1661,9 +1869,15 @@ class TestHStack():
         t1['b'].info.description = 't1_b'
         t4['f'].info.format = '%6s'
         t1['b'].info.meta.update(meta1)
-        t3['d'].info.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
-        t4['g'].info.meta.update(OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)]))
-        t3['e'].info.meta.update(OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)]))
+        t3['d'].info.meta.update(
+            OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        )
+        t4['g'].info.meta.update(
+            OrderedDict([('b', [5, 6]), ('c', {'c': 1}), ('e', 1)])
+        )
+        t3['e'].info.meta.update(
+            OrderedDict([('b', [3, 4]), ('c', {'b': 1}), ('a', 1)])
+        )
         t3['d'].unit = 'm'
         t3['d'].info.format = '%6s'
         t3['d'].info.description = 't3_c'
@@ -1699,13 +1913,13 @@ class TestHStack():
 
         # Check that columns are as expected.
         if cls_name == 'SkyCoord':
-            assert skycoord_equal(out['col0_1'], col1[:len(col2)])
+            assert skycoord_equal(out['col0_1'], col1[: len(col2)])
             assert skycoord_equal(out['col0_2'], col2)
         elif 'Repr' in cls_name or 'Diff' in cls_name:
-            assert np.all(representation_equal(out['col0_1'], col1[:len(col2)]))
+            assert np.all(representation_equal(out['col0_1'], col1[: len(col2)]))
             assert np.all(representation_equal(out['col0_2'], col2))
         else:
-            assert np.all(out['col0_1'] == col1[:len(col2)])
+            assert np.all(out['col0_1'] == col1[: len(col2)])
             assert np.all(out['col0_2'] == col2)
 
         # Time class supports masking, all other mixins do not
@@ -1713,7 +1927,7 @@ class TestHStack():
             out = table.hstack([t1, t2], join_type='outer')
             assert len(out) == len(t1)
             assert np.all(out['col0_1'] == col1)
-            assert np.all(out['col0_2'][:len(col2)] == col2)
+            assert np.all(out['col0_2'][: len(col2)] == col2)
             assert check_mask(out['col0_2'], [False, False, True, True])
 
             # check directly stacking mixin columns:
@@ -1728,17 +1942,20 @@ class TestHStack():
 
 def test_unique(operation_table_type):
     t = operation_table_type.read(
-        [' a b  c  d',
-         ' 2 b 7.0 0',
-         ' 1 c 3.0 5',
-         ' 2 b 6.0 2',
-         ' 2 a 4.0 3',
-         ' 1 a 1.0 7',
-         ' 2 b 5.0 1',
-         ' 0 a 0.0 4',
-         ' 1 a 2.0 6',
-         ' 1 c 3.0 5',
-         ], format='ascii')
+        [
+            ' a b  c  d',
+            ' 2 b 7.0 0',
+            ' 1 c 3.0 5',
+            ' 2 b 6.0 2',
+            ' 2 a 4.0 3',
+            ' 1 a 1.0 7',
+            ' 2 b 5.0 1',
+            ' 0 a 0.0 4',
+            ' 1 a 2.0 6',
+            ' 1 c 3.0 5',
+        ],
+        format='ascii',
+    )
 
     tu = operation_table_type(np.sort(t[:-1]))
 
@@ -1747,53 +1964,69 @@ def test_unique(operation_table_type):
     t_s = t.copy()
     del t_s['b', 'c', 'd']
     t_all = table.unique(t_s)
-    assert sort_eq(t_all.pformat(), [' a ',
-                                     '---',
-                                     '  0',
-                                     '  1',
-                                     '  2'])
+    assert sort_eq(t_all.pformat(), [' a ', '---', '  0', '  1', '  2'])
 
     key1 = 'a'
     t1a = table.unique(t, key1)
-    assert sort_eq(t1a.pformat(), [' a   b   c   d ',
-                                   '--- --- --- ---',
-                                   '  0   a 0.0   4',
-                                   '  1   c 3.0   5',
-                                   '  2   b 7.0   0'])
+    assert sort_eq(
+        t1a.pformat(),
+        [
+            ' a   b   c   d ',
+            '--- --- --- ---',
+            '  0   a 0.0   4',
+            '  1   c 3.0   5',
+            '  2   b 7.0   0',
+        ],
+    )
     t1b = table.unique(t, key1, keep='last')
-    assert sort_eq(t1b.pformat(), [' a   b   c   d ',
-                                   '--- --- --- ---',
-                                   '  0   a 0.0   4',
-                                   '  1   c 3.0   5',
-                                   '  2   b 5.0   1'])
+    assert sort_eq(
+        t1b.pformat(),
+        [
+            ' a   b   c   d ',
+            '--- --- --- ---',
+            '  0   a 0.0   4',
+            '  1   c 3.0   5',
+            '  2   b 5.0   1',
+        ],
+    )
     t1c = table.unique(t, key1, keep='none')
-    assert sort_eq(t1c.pformat(), [' a   b   c   d ',
-                                   '--- --- --- ---',
-                                   '  0   a 0.0   4'])
+    assert sort_eq(
+        t1c.pformat(), [' a   b   c   d ', '--- --- --- ---', '  0   a 0.0   4']
+    )
 
     key2 = ['a', 'b']
     t2a = table.unique(t, key2)
-    assert sort_eq(t2a.pformat(), [' a   b   c   d ',
-                                   '--- --- --- ---',
-                                   '  0   a 0.0   4',
-                                   '  1   a 1.0   7',
-                                   '  1   c 3.0   5',
-                                   '  2   a 4.0   3',
-                                   '  2   b 7.0   0'])
+    assert sort_eq(
+        t2a.pformat(),
+        [
+            ' a   b   c   d ',
+            '--- --- --- ---',
+            '  0   a 0.0   4',
+            '  1   a 1.0   7',
+            '  1   c 3.0   5',
+            '  2   a 4.0   3',
+            '  2   b 7.0   0',
+        ],
+    )
 
     t2b = table.unique(t, key2, keep='last')
-    assert sort_eq(t2b.pformat(), [' a   b   c   d ',
-                                   '--- --- --- ---',
-                                   '  0   a 0.0   4',
-                                   '  1   a 2.0   6',
-                                   '  1   c 3.0   5',
-                                   '  2   a 4.0   3',
-                                   '  2   b 5.0   1'])
+    assert sort_eq(
+        t2b.pformat(),
+        [
+            ' a   b   c   d ',
+            '--- --- --- ---',
+            '  0   a 0.0   4',
+            '  1   a 2.0   6',
+            '  1   c 3.0   5',
+            '  2   a 4.0   3',
+            '  2   b 5.0   1',
+        ],
+    )
     t2c = table.unique(t, key2, keep='none')
-    assert sort_eq(t2c.pformat(), [' a   b   c   d ',
-                                   '--- --- --- ---',
-                                   '  0   a 0.0   4',
-                                   '  2   a 4.0   3'])
+    assert sort_eq(
+        t2c.pformat(),
+        [' a   b   c   d ', '--- --- --- ---', '  0   a 0.0   4', '  2   a 4.0   3'],
+    )
 
     key2 = ['a', 'a']
     with pytest.raises(ValueError) as exc:
@@ -1802,8 +2035,7 @@ def test_unique(operation_table_type):
 
     with pytest.raises(ValueError) as exc:
         table.unique(t, key2, keep=True)
-    assert exc.value.args[0] == (
-        "'keep' should be one of 'first', 'last', 'none'")
+    assert exc.value.args[0] == ("'keep' should be one of 'first', 'last', 'none'")
 
     t1_m = operation_table_type(t1a, masked=True)
     t1_m['a'].mask[1] = True
@@ -1812,15 +2044,18 @@ def test_unique(operation_table_type):
         t1_mu = table.unique(t1_m)
     assert exc.value.args[0] == (
         "cannot use columns with masked values as keys; "
-        "remove column 'a' from keys and rerun unique()")
+        "remove column 'a' from keys and rerun unique()"
+    )
 
     t1_mu = table.unique(t1_m, silent=True)
     assert t1_mu.masked is False
-    assert t1_mu.pformat() == [' a   b   c   d ',
-                               '--- --- --- ---',
-                               '  0   a 0.0   4',
-                               '  2   b 7.0   0',
-                               ' --   c 3.0   5']
+    assert t1_mu.pformat() == [
+        ' a   b   c   d ',
+        '--- --- --- ---',
+        '  0   a 0.0   4',
+        '  2   b 7.0   0',
+        ' --   c 3.0   5',
+    ]
 
     with pytest.raises(ValueError):
         t1_mu = table.unique(t1_m, silent=True, keys='a')
@@ -1833,11 +2068,13 @@ def test_unique(operation_table_type):
     # order
     t1_mu = table.unique(t1_m, keys=['d', 'a', 'b'], silent=True)
     assert t1_mu.masked is False
-    assert t1_mu.pformat() == [' a   b   c   d ',
-                               '--- --- --- ---',
-                               '  2   a 4.0  --',
-                               '  2   b 7.0   0',
-                               ' --   c 3.0   5']
+    assert t1_mu.pformat() == [
+        ' a   b   c   d ',
+        '--- --- --- ---',
+        '  2   a 4.0  --',
+        '  2   b 7.0   0',
+        ' --   c 3.0   5',
+    ]
 
 
 def test_vstack_bytes(operation_table_type):
@@ -1950,6 +2187,7 @@ def test_sort_indexed_table():
     # Using the table as a TimeSeries implicitly sets the index, so
     # this test is a bit different from the above.
     from astropy.timeseries import TimeSeries
+
     ts = TimeSeries(time=times)
     ts['flux'] = [3, 2, 1]
     ts.sort('flux')

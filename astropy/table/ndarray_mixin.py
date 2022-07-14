@@ -27,6 +27,7 @@ class NdarrayMixin(np.ndarray):
     ndarrays within a Table.  This is a subclass of numpy.ndarray
     and has the same initialization options as ``np.array()``.
     """
+
     info = NdarrayMixinInfo()
 
     def __new__(cls, obj, *args, **kwargs):

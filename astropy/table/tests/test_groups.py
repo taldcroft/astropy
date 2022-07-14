@@ -1,14 +1,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import pytest
 import numpy as np
+import pytest
 
-from astropy.table import Table, Column, QTable, table_helpers, NdarrayMixin, unique
+from astropy import coordinates, time
+from astropy import units as u
+from astropy.table import Column, NdarrayMixin, QTable, Table, table_helpers, unique
 from astropy.utils.compat import NUMPY_LT_1_22, NUMPY_LT_1_22_1
 from astropy.utils.exceptions import AstropyUserWarning
-from astropy import time
-from astropy import units as u
-from astropy import coordinates
 
 
 def sort_eq(list1, list2):
@@ -47,17 +46,19 @@ def test_table_group_by(T1):
         assert str(tg['a'].groups) == "<ColumnGroups indices=[0 1 4 8]>"
 
         # Sorted by 'a' and in original order for rest
-        assert tg.pformat() == [' a   b   c   d   q ',
-                                '                 m ',
-                                '--- --- --- --- ---',
-                                '  0   a 0.0   4 4.0',
-                                '  1   b 3.0   5 5.0',
-                                '  1   a 2.0   6 6.0',
-                                '  1   a 1.0   7 7.0',
-                                '  2   c 7.0   0 0.0',
-                                '  2   b 5.0   1 1.0',
-                                '  2   b 6.0   2 2.0',
-                                '  2   a 4.0   3 3.0']
+        assert tg.pformat() == [
+            ' a   b   c   d   q ',
+            '                 m ',
+            '--- --- --- --- ---',
+            '  0   a 0.0   4 4.0',
+            '  1   b 3.0   5 5.0',
+            '  1   a 2.0   6 6.0',
+            '  1   a 1.0   7 7.0',
+            '  2   c 7.0   0 0.0',
+            '  2   b 5.0   1 1.0',
+            '  2   b 6.0   2 2.0',
+            '  2   a 4.0   3 3.0',
+        ]
         assert tg.meta['ta'] == 1
         assert tg['c'].meta['a'] == 1
         assert tg['c'].description == 'column c'
@@ -71,17 +72,19 @@ def test_table_group_by(T1):
             tg = t1.group_by(keys)
             assert np.all(tg.groups.indices == np.array([0, 1, 3, 4, 5, 7, 8]))
             # Sorted by 'a', 'b' and in original order for rest
-            assert tg.pformat() == [' a   b   c   d   q ',
-                                    '                 m ',
-                                    '--- --- --- --- ---',
-                                    '  0   a 0.0   4 4.0',
-                                    '  1   a 2.0   6 6.0',
-                                    '  1   a 1.0   7 7.0',
-                                    '  1   b 3.0   5 5.0',
-                                    '  2   a 4.0   3 3.0',
-                                    '  2   b 5.0   1 1.0',
-                                    '  2   b 6.0   2 2.0',
-                                    '  2   c 7.0   0 0.0']
+            assert tg.pformat() == [
+                ' a   b   c   d   q ',
+                '                 m ',
+                '--- --- --- --- ---',
+                '  0   a 0.0   4 4.0',
+                '  1   a 2.0   6 6.0',
+                '  1   a 1.0   7 7.0',
+                '  1   b 3.0   5 5.0',
+                '  2   a 4.0   3 3.0',
+                '  2   b 5.0   1 1.0',
+                '  2   b 6.0   2 2.0',
+                '  2   c 7.0   0 0.0',
+            ]
 
         # Group by a Table
         tg2 = t1.group_by(t1['a', 'b'])
@@ -94,17 +97,19 @@ def test_table_group_by(T1):
         # Group by a simple ndarray
         tg = t1.group_by(np.array([0, 1, 0, 1, 2, 1, 0, 0]))
         assert np.all(tg.groups.indices == np.array([0, 4, 7, 8]))
-        assert tg.pformat() == [' a   b   c   d   q ',
-                                '                 m ',
-                                '--- --- --- --- ---',
-                                '  2   c 7.0   0 0.0',
-                                '  2   b 6.0   2 2.0',
-                                '  1   a 2.0   6 6.0',
-                                '  1   a 1.0   7 7.0',
-                                '  2   b 5.0   1 1.0',
-                                '  2   a 4.0   3 3.0',
-                                '  1   b 3.0   5 5.0',
-                                '  0   a 0.0   4 4.0']
+        assert tg.pformat() == [
+            ' a   b   c   d   q ',
+            '                 m ',
+            '--- --- --- --- ---',
+            '  2   c 7.0   0 0.0',
+            '  2   b 6.0   2 2.0',
+            '  1   a 2.0   6 6.0',
+            '  1   a 1.0   7 7.0',
+            '  2   b 5.0   1 1.0',
+            '  2   a 4.0   3 3.0',
+            '  1   b 3.0   5 5.0',
+            '  0   a 0.0   4 4.0',
+        ]
 
 
 def test_groups_keys(T1):
@@ -246,21 +251,25 @@ def test_grouped_item_access(T1):
         assert np.all(tgs.groups.keys == tg.groups.keys)
         assert np.all(tgs.groups.indices == tg.groups.indices)
         tgsa = tgs.groups.aggregate(np.sum)
-        assert tgsa.pformat() == [' a   c    d ',
-                                  '--- ---- ---',
-                                  '  0  0.0   4',
-                                  '  1  6.0  18',
-                                  '  2 22.0   6']
+        assert tgsa.pformat() == [
+            ' a   c    d ',
+            '--- ---- ---',
+            '  0  0.0   4',
+            '  1  6.0  18',
+            '  2 22.0   6',
+        ]
 
         tgs = tg['c', 'd']
         assert np.all(tgs.groups.keys == tg.groups.keys)
         assert np.all(tgs.groups.indices == tg.groups.indices)
         tgsa = tgs.groups.aggregate(np.sum)
-        assert tgsa.pformat() == [' c    d ',
-                                  '---- ---',
-                                  ' 0.0   4',
-                                  ' 6.0  18',
-                                  '22.0   6']
+        assert tgsa.pformat() == [
+            ' c    d ',
+            '---- ---',
+            ' 0.0   4',
+            ' 6.0  18',
+            '22.0   6',
+        ]
 
 
 def test_mutable_operations(T1):
@@ -318,17 +327,19 @@ def test_group_by_masked(T1):
     t1m = QTable(T1, masked=True)
     t1m['c'].mask[4] = True
     t1m['d'].mask[5] = True
-    assert t1m.group_by('a').pformat() == [' a   b   c   d   q ',
-                                           '                 m ',
-                                           '--- --- --- --- ---',
-                                           '  0   a  --   4 4.0',
-                                           '  1   b 3.0  -- 5.0',
-                                           '  1   a 2.0   6 6.0',
-                                           '  1   a 1.0   7 7.0',
-                                           '  2   c 7.0   0 0.0',
-                                           '  2   b 5.0   1 1.0',
-                                           '  2   b 6.0   2 2.0',
-                                           '  2   a 4.0   3 3.0']
+    assert t1m.group_by('a').pformat() == [
+        ' a   b   c   d   q ',
+        '                 m ',
+        '--- --- --- --- ---',
+        '  0   a  --   4 4.0',
+        '  1   b 3.0  -- 5.0',
+        '  1   a 2.0   6 6.0',
+        '  1   a 1.0   7 7.0',
+        '  2   c 7.0   0 0.0',
+        '  2   b 5.0   1 1.0',
+        '  2   b 6.0   2 2.0',
+        '  2   a 4.0   3 3.0',
+    ]
 
 
 def test_group_by_errors(T1):
@@ -367,8 +378,12 @@ def test_groups_keys_meta(T1):
     assert tg.groups.keys.meta['grouped_by_table_cols'] is True
     assert tg['c'].groups.keys.meta['grouped_by_table_cols'] is True
     assert tg.groups[1].groups.keys.meta['grouped_by_table_cols'] is True
-    assert (tg['d'].groups[np.array([False, True, True])]
-            .groups.keys.meta['grouped_by_table_cols'] is True)
+    assert (
+        tg['d']
+        .groups[np.array([False, True, True])]
+        .groups.keys.meta['grouped_by_table_cols']
+        is True
+    )
 
     # Group by external Table
     tg = T1.group_by(T1['a', 'b'])
@@ -395,11 +410,13 @@ def test_table_aggregate(T1):
     t1 = T1['a', 'c', 'd']
     tg = t1.group_by('a')
     tga = tg.groups.aggregate(np.sum)
-    assert tga.pformat() == [' a   c    d ',
-                             '--- ---- ---',
-                             '  0  0.0   4',
-                             '  1  6.0  18',
-                             '  2 22.0   6']
+    assert tga.pformat() == [
+        ' a   c    d ',
+        '--- ---- ---',
+        '  0  0.0   4',
+        '  1  6.0  18',
+        '  2 22.0   6',
+    ]
     # Reverts to default groups
     assert np.all(tga.groups.indices == np.array([0, 3]))
     assert tga.groups.keys is None
@@ -419,12 +436,14 @@ def test_table_aggregate(T1):
     with pytest.warns(UserWarning, match="converting a masked element to nan"):
         tga = tg.groups.aggregate(np.sum)
 
-    assert tga.pformat() == [' a   c    d    q  ',
-                             '               m  ',
-                             '--- ---- ---- ----',
-                             '  0  nan  nan  4.0',
-                             '  1  3.0 13.0 18.0',
-                             '  2 22.0  6.0  6.0']
+    assert tga.pformat() == [
+        ' a   c    d    q  ',
+        '               m  ',
+        '--- ---- ---- ----',
+        '  0  nan  nan  4.0',
+        '  1  3.0 13.0 18.0',
+        '  2 22.0  6.0  6.0',
+    ]
 
     # Aggregrate with np.sum with masked elements, but where every
     # group has at least one remaining (unmasked) element.  Then
@@ -434,23 +453,27 @@ def test_table_aggregate(T1):
     t1m['d'].mask[5] = True
     tg = t1m.group_by('a')
     tga = tg.groups.aggregate(np.sum)
-    assert tga.pformat() == [' a   c    d ',
-                             '--- ---- ---',
-                             '  0  0.0   4',
-                             '  1  3.0  13',
-                             '  2 22.0   6']
+    assert tga.pformat() == [
+        ' a   c    d ',
+        '--- ---- ---',
+        '  0  0.0   4',
+        '  1  3.0  13',
+        '  2 22.0   6',
+    ]
 
     # Aggregate with a column type that cannot by supplied to the aggregating
     # function.  This raises a warning but still works.
     tg = T1.group_by('a')
     with pytest.warns(AstropyUserWarning, match="Cannot aggregate column"):
         tga = tg.groups.aggregate(np.sum)
-    assert tga.pformat() == [' a   c    d   q  ',
-                             '              m  ',
-                             '--- ---- --- ----',
-                             '  0  0.0   4  4.0',
-                             '  1  6.0  18 18.0',
-                             '  2 22.0   6  6.0']
+    assert tga.pformat() == [
+        ' a   c    d   q  ',
+        '              m  ',
+        '--- ---- --- ----',
+        '  0  0.0   4  4.0',
+        '  1  6.0  18 18.0',
+        '  2 22.0   6  6.0',
+    ]
 
 
 def test_table_aggregate_reduceat(T1):
@@ -477,20 +500,24 @@ def test_table_aggregate_reduceat(T1):
 
     assert np.all(tga_r == tga_n)
     assert np.all(tga_a == tga_n)
-    assert tga_n.pformat() == [' a   c    d ',
-                               '--- ---- ---',
-                               '  0  0.0   4',
-                               '  1  6.0  18',
-                               '  2 22.0   6']
+    assert tga_n.pformat() == [
+        ' a   c    d ',
+        '--- ---- ---',
+        '  0  0.0   4',
+        '  1  6.0  18',
+        '  2 22.0   6',
+    ]
 
     tga_r = tg.groups.aggregate(np.mean)
     tga_n = tg.groups.aggregate(np_mean)
     assert np.all(tga_r == tga_n)
-    assert tga_n.pformat() == [' a   c   d ',
-                               '--- --- ---',
-                               '  0 0.0 4.0',
-                               '  1 2.0 6.0',
-                               '  2 5.5 1.5']
+    assert tga_n.pformat() == [
+        ' a   c   d ',
+        '--- --- ---',
+        '  0 0.0 4.0',
+        '  1 2.0 6.0',
+        '  2 5.5 1.5',
+    ]
 
     # Binary ufunc np_add should raise warning without reduceat
     t2 = T1['a', 'c']
@@ -498,11 +525,7 @@ def test_table_aggregate_reduceat(T1):
 
     with pytest.warns(AstropyUserWarning, match="Cannot aggregate column"):
         tga = tg.groups.aggregate(np_add)
-    assert tga.pformat() == [' a ',
-                             '---',
-                             '  0',
-                             '  1',
-                             '  2']
+    assert tga.pformat() == [' a ', '---', '  0', '  1', '  2']
 
 
 def test_column_aggregate(T1):
@@ -512,31 +535,27 @@ def test_column_aggregate(T1):
     for masked in (False, True):
         tg = QTable(T1, masked=masked).group_by('a')
         tga = tg['c'].groups.aggregate(np.sum)
-        assert tga.pformat() == [' c  ',
-                                 '----',
-                                 ' 0.0',
-                                 ' 6.0',
-                                 '22.0']
+        assert tga.pformat() == [' c  ', '----', ' 0.0', ' 6.0', '22.0']
 
 
-@pytest.mark.skipif(not NUMPY_LT_1_22 and NUMPY_LT_1_22_1,
-                    reason='https://github.com/numpy/numpy/issues/20699')
+@pytest.mark.skipif(
+    not NUMPY_LT_1_22 and NUMPY_LT_1_22_1,
+    reason='https://github.com/numpy/numpy/issues/20699',
+)
 def test_column_aggregate_f8():
     """https://github.com/astropy/astropy/issues/12706"""
     # Just want to make sure it does not crash again.
     for masked in (False, True):
         tg = Table({'a': np.arange(2, dtype='>f8')}, masked=masked).group_by('a')
         tga = tg['a'].groups.aggregate(np.sum)
-        assert tga.pformat() == [' a ',
-                                 '---',
-                                 '0.0',
-                                 '1.0']
+        assert tga.pformat() == [' a ', '---', '0.0', '1.0']
 
 
 def test_table_filter():
     """
     Table groups filtering
     """
+
     def all_positive(table, key_colnames):
         colnames = [name for name in table.colnames if name not in key_colnames]
         for colname in colnames:
@@ -545,49 +564,58 @@ def test_table_filter():
         return True
 
     # Negative value in 'a' column should not filter because it is a key col
-    t = Table.read([' a c d',
-                    ' -2 7.0 0',
-                    ' -2 5.0 1',
-                    ' 0 0.0 4',
-                    ' 1 3.0 5',
-                    ' 1 2.0 -6',
-                    ' 1 1.0 7',
-                    ' 3 3.0 5',
-                    ' 3 -2.0 6',
-                    ' 3 1.0 7',
-                    ], format='ascii')
+    t = Table.read(
+        [
+            ' a c d',
+            ' -2 7.0 0',
+            ' -2 5.0 1',
+            ' 0 0.0 4',
+            ' 1 3.0 5',
+            ' 1 2.0 -6',
+            ' 1 1.0 7',
+            ' 3 3.0 5',
+            ' 3 -2.0 6',
+            ' 3 1.0 7',
+        ],
+        format='ascii',
+    )
     tg = t.group_by('a')
     t2 = tg.groups.filter(all_positive)
-    assert t2.groups[0].pformat() == [' a   c   d ',
-                                      '--- --- ---',
-                                      ' -2 7.0   0',
-                                      ' -2 5.0   1']
-    assert t2.groups[1].pformat() == [' a   c   d ',
-                                      '--- --- ---',
-                                      '  0 0.0   4']
+    assert t2.groups[0].pformat() == [
+        ' a   c   d ',
+        '--- --- ---',
+        ' -2 7.0   0',
+        ' -2 5.0   1',
+    ]
+    assert t2.groups[1].pformat() == [' a   c   d ', '--- --- ---', '  0 0.0   4']
 
 
 def test_column_filter():
     """
     Table groups filtering
     """
+
     def all_positive(column):
         if np.any(column < 0):
             return False
         return True
 
     # Negative value in 'a' column should not filter because it is a key col
-    t = Table.read([' a c d',
-                    ' -2 7.0 0',
-                    ' -2 5.0 1',
-                    ' 0 0.0 4',
-                    ' 1 3.0 5',
-                    ' 1 2.0 -6',
-                    ' 1 1.0 7',
-                    ' 3 3.0 5',
-                    ' 3 -2.0 6',
-                    ' 3 1.0 7',
-                    ], format='ascii')
+    t = Table.read(
+        [
+            ' a c d',
+            ' -2 7.0 0',
+            ' -2 5.0 1',
+            ' 0 0.0 4',
+            ' 1 3.0 5',
+            ' 1 2.0 -6',
+            ' 1 1.0 7',
+            ' 3 3.0 5',
+            ' 3 -2.0 6',
+            ' 3 1.0 7',
+        ],
+        format='ascii',
+    )
     tg = t.group_by('a')
     c2 = tg['c'].groups.filter(all_positive)
     assert len(c2.groups) == 3
@@ -602,7 +630,7 @@ def test_group_mixins():
     """
     # Setup mixins
     idx = np.arange(4)
-    x = np.array([3., 1., 2., 1.])
+    x = np.array([3.0, 1.0, 2.0, 1.0])
     q = x * u.m
     lon = coordinates.Longitude(x * u.deg)
     lat = coordinates.Latitude(x * u.deg)
@@ -610,11 +638,14 @@ def test_group_mixins():
     tm = time.Time(2000, format='jyear') + time.TimeDelta(x * 1e-10, format='sec')
     sc = coordinates.SkyCoord(ra=lon, dec=lat)
     aw = table_helpers.ArrayWrapper(x)
-    nd = np.array([(3, 'c'), (1, 'a'), (2, 'b'), (1, 'a')],
-                  dtype='<i4,|S1').view(NdarrayMixin)
+    nd = np.array([(3, 'c'), (1, 'a'), (2, 'b'), (1, 'a')], dtype='<i4,|S1').view(
+        NdarrayMixin
+    )
 
-    qt = QTable([idx, x, q, lon, lat, tm, sc, aw, nd],
-                names=['idx', 'x', 'q', 'lon', 'lat', 'tm', 'sc', 'aw', 'nd'])
+    qt = QTable(
+        [idx, x, q, lon, lat, tm, sc, aw, nd],
+        names=['idx', 'x', 'q', 'lon', 'lat', 'tm', 'sc', 'aw', 'nd'],
+    )
 
     # Test group_by with each supported mixin type
     mixin_keys = ['x', 'q', 'lon', 'lat', 'tm', 'sc', 'aw', 'nd']
@@ -636,7 +667,7 @@ def test_group_mixins():
     uqt = unique(qt, keys=mixin_keys)
     assert len(uqt) == 3
     assert np.all(uqt['idx'] == [1, 2, 0])
-    assert np.all(uqt['x'] == [1., 2., 3.])
+    assert np.all(uqt['x'] == [1.0, 2.0, 3.0])
 
     # Column group_by() with mixins
     idxg = qt['idx'].group_by(qt[mixin_keys])
@@ -644,9 +675,13 @@ def test_group_mixins():
 
 
 @pytest.mark.parametrize(
-    'col', [time.TimeDelta([1, 2], format='sec'),
-            time.Time([1, 2], format='cxcsec'),
-            coordinates.SkyCoord([1, 2], [3, 4], unit='deg,deg')])
+    'col',
+    [
+        time.TimeDelta([1, 2], format='sec'),
+        time.Time([1, 2], format='cxcsec'),
+        coordinates.SkyCoord([1, 2], [3, 4], unit='deg,deg'),
+    ],
+)
 def test_group_mixins_unsupported(col):
     """Test that aggregating unsupported mixins produces a warning only"""
 

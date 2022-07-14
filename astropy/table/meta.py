@@ -1,6 +1,6 @@
+import copy
 import json
 import textwrap
-import copy
 from collections import OrderedDict
 
 import numpy as np
@@ -80,21 +80,28 @@ def _construct_odict(load, node):
     yield omap
     if not isinstance(node, yaml.SequenceNode):
         raise yaml.constructor.ConstructorError(
-            "while constructing an ordered map", node.start_mark,
-            f"expected a sequence, but found {node.id}", node.start_mark)
+            "while constructing an ordered map",
+            node.start_mark,
+            f"expected a sequence, but found {node.id}",
+            node.start_mark,
+        )
 
     for subnode in node.value:
         if not isinstance(subnode, yaml.MappingNode):
             raise yaml.constructor.ConstructorError(
-                "while constructing an ordered map", node.start_mark,
+                "while constructing an ordered map",
+                node.start_mark,
                 f"expected a mapping of length 1, but found {subnode.id}",
-                subnode.start_mark)
+                subnode.start_mark,
+            )
 
         if len(subnode.value) != 1:
             raise yaml.constructor.ConstructorError(
-                "while constructing an ordered map", node.start_mark,
+                "while constructing an ordered map",
+                node.start_mark,
                 f"expected a single mapping item, but found {len(subnode.value)} items",
-                subnode.start_mark)
+                subnode.start_mark,
+            )
 
         key_node, value_node = subnode.value[0]
         key = load.construct_object(key_node)
@@ -181,6 +188,7 @@ def _get_variable_length_array_shape(col):
     dtype : np.dtype
         Numpy dtype that applies to col
     """
+
     class ConvertError(ValueError):
         """Local conversion error used below"""
 
@@ -257,10 +265,12 @@ def _get_col_attributes(col):
     attrs = ColumnDict()
     attrs['name'] = col.info.name
     attrs['datatype'] = datatype
-    for attr, nontrivial, xform in (('unit', lambda x: x is not None, str),
-                                    ('format', lambda x: x is not None, None),
-                                    ('description', lambda x: x is not None, None),
-                                    ('meta', lambda x: x, None)):
+    for attr, nontrivial, xform in (
+        ('unit', lambda x: x is not None, str),
+        ('format', lambda x: x is not None, None),
+        ('description', lambda x: x is not None, None),
+        ('meta', lambda x: x, None),
+    ):
         col_attr = getattr(col.info, attr)
         if nontrivial(col_attr):
             attrs[attr] = xform(col_attr) if xform else col_attr
@@ -356,7 +366,9 @@ def get_yaml_from_header(header):
                 node_value = self.represent_data(item_value)
                 if not (isinstance(node_key, yaml.ScalarNode) and not node_key.style):
                     best_style = False
-                if not (isinstance(node_value, yaml.ScalarNode) and not node_value.style):
+                if not (
+                    isinstance(node_value, yaml.ScalarNode) and not node_value.style
+                ):
                     best_style = False
                 value.append((node_key, node_value))
             if flow_style is None:
@@ -373,8 +385,9 @@ def get_yaml_from_header(header):
     header['datatype'] = [_get_col_attributes(col) for col in header['cols']]
     del header['cols']
 
-    lines = yaml.dump(header, default_flow_style=None,
-                      Dumper=TableDumper, width=130).splitlines()
+    lines = yaml.dump(
+        header, default_flow_style=None, Dumper=TableDumper, width=130
+    ).splitlines()
     return lines
 
 

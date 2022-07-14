@@ -5,18 +5,17 @@
 https://github.com/astropy/astropy/wiki/Table-item-access-definition
 """
 
-import pytest
 import numpy as np
+import pytest
 
 
 @pytest.mark.usefixtures('table_data')
-class BaseTestItems():
+class BaseTestItems:
     pass
 
 
 @pytest.mark.usefixtures('table_data')
 class TestTableColumnsItems(BaseTestItems):
-
     def test_by_name(self, table_data):
         """Access TableColumns by name and show that item access returns
         a Column that refers to underlying table data"""
@@ -90,7 +89,6 @@ class TestTableColumnsItems(BaseTestItems):
 
 @pytest.mark.usefixtures('table_data')
 class TestTableItems(BaseTestItems):
-
     @pytest.mark.parametrize("idx", [1, np.int64(1), np.array(1)])
     def test_column(self, table_data, idx):
         """Column access returns REFERENCE to data"""

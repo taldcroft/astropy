@@ -1,14 +1,18 @@
 from copy import copy
 from unittest.mock import MagicMock
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_equal
 
 from astropy.table import Table
+from astropy.table.mixins.registry import (
+    MixinRegistryError,
+    _handlers,
+    get_mixin_handler,
+    register_mixin_handler,
+)
 from astropy.table.table_helpers import ArrayWrapper
-from astropy.table.mixins.registry import (_handlers, register_mixin_handler,
-                                           MixinRegistryError, get_mixin_handler)
 
 ORIGINAL = {}
 
@@ -57,7 +61,10 @@ def test_register_handler_override():
     register_mixin_handler(FULL_QUALNAME, handle_spam)
     with pytest.raises(MixinRegistryError) as exc:
         register_mixin_handler(FULL_QUALNAME, handle_spam_alt)
-    assert exc.value.args[0] == 'Handler for class astropy.table.mixins.tests.test_registry.SpamData is already defined'
+    assert (
+        exc.value.args[0]
+        == 'Handler for class astropy.table.mixins.tests.test_registry.SpamData is already defined'
+    )
     register_mixin_handler(FULL_QUALNAME, handle_spam_alt, force=True)
     assert get_mixin_handler(SpamData()) is handle_spam_alt
 
@@ -95,5 +102,7 @@ def test_invalid_handler():
 
     with pytest.raises(TypeError) as exc:
         t['a'] = SpamData()
-    assert exc.value.args[0] == (f'Mixin handler for object of type {FULL_QUALNAME} '
-                                 f'did not return a valid mixin column')
+    assert exc.value.args[0] == (
+        f'Mixin handler for object of type {FULL_QUALNAME} '
+        f'did not return a valid mixin column'
+    )

@@ -28,8 +28,7 @@ class DaskColumn(da.Array):
             return as_dask_column(result, info=self.info)
 
     def insert(self, obj, values, axis=0):
-        return as_dask_column(da.insert(self, obj, values, axis=axis),
-                              info=self.info)
+        return as_dask_column(da.insert(self, obj, values, axis=axis), info=self.info)
 
 
 def as_dask_column(array, info=None):

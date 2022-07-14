@@ -9,20 +9,17 @@ can not be defined in a module by a different name and still be shared
 between modules.
 """
 
-from copy import deepcopy
-from collections import OrderedDict
 import pickle
+from collections import OrderedDict
+from copy import deepcopy
 
-import pytest
 import numpy as np
+import pytest
 
-from astropy import table
-from astropy.table import Table, QTable
-from astropy.table.table_helpers import ArrayWrapper
-from astropy import time
+from astropy import coordinates, table, time
 from astropy import units as u
-from astropy import coordinates
-from astropy.table import pprint
+from astropy.table import QTable, Table, pprint
+from astropy.table.table_helpers import ArrayWrapper
 
 
 @pytest.fixture(params=[table.Column, table.MaskedColumn])
@@ -65,6 +62,7 @@ class MyTable(table.Table):
     TableColumns = MyTableColumns
     TableFormatter = MyTableFormatter
 
+
 # Fixture to run all the Column tests for both an unmasked (ndarray)
 # and masked (MaskedArray) column.
 
@@ -82,6 +80,7 @@ def table_types(request):
             elif request.param == 'subclass':
                 self.Table = MyTable
                 self.Column = MyColumn
+
     return TableTypes(request)
 
 
@@ -94,13 +93,33 @@ def table_data(request):
             self.Table = MaskedTable if request.param else table.Table
             self.Column = table.MaskedColumn if request.param else table.Column
             self.COLS = [
-                self.Column(name='a', data=[1, 2, 3], description='da',
-                            format='%i', meta={'ma': 1}, unit='ua'),
-                self.Column(name='b', data=[4, 5, 6], description='db',
-                            format='%d', meta={'mb': 1}, unit='ub'),
-                self.Column(name='c', data=[7, 8, 9], description='dc',
-                            format='%f', meta={'mc': 1}, unit='ub')]
+                self.Column(
+                    name='a',
+                    data=[1, 2, 3],
+                    description='da',
+                    format='%i',
+                    meta={'ma': 1},
+                    unit='ua',
+                ),
+                self.Column(
+                    name='b',
+                    data=[4, 5, 6],
+                    description='db',
+                    format='%d',
+                    meta={'mb': 1},
+                    unit='ub',
+                ),
+                self.Column(
+                    name='c',
+                    data=[7, 8, 9],
+                    description='dc',
+                    format='%f',
+                    meta={'mc': 1},
+                    unit='ub',
+                ),
+            ]
             self.DATA = self.Table(self.COLS)
+
     return TableData(request)
 
 
@@ -130,33 +149,41 @@ def table_type(request):
 
 # Stuff for testing mixin columns
 
-MIXIN_COLS = {'quantity': [0, 1, 2, 3] * u.m,
-              'longitude': coordinates.Longitude([0., 1., 5., 6.] * u.deg,
-                                                 wrap_angle=180. * u.deg),
-              'latitude': coordinates.Latitude([5., 6., 10., 11.] * u.deg),
-              'time': time.Time([2000, 2001, 2002, 2003], format='jyear'),
-              'timedelta': time.TimeDelta([1, 2, 3, 4], format='jd'),
-              'skycoord': coordinates.SkyCoord(ra=[0, 1, 2, 3] * u.deg,
-                                               dec=[0, 1, 2, 3] * u.deg),
-              'sphericalrep': coordinates.SphericalRepresentation(
-                  [0, 1, 2, 3]*u.deg, [0, 1, 2, 3]*u.deg, 1*u.kpc),
-              'cartesianrep': coordinates.CartesianRepresentation(
-                  [0, 1, 2, 3]*u.pc, [4, 5, 6, 7]*u.pc, [9, 8, 8, 6]*u.pc),
-              'sphericaldiff': coordinates.SphericalCosLatDifferential(
-                  [0, 1, 2, 3]*u.mas/u.yr, [0, 1, 2, 3]*u.mas/u.yr,
-                  10*u.km/u.s),
-              'arraywrap': ArrayWrapper([0, 1, 2, 3]),
-              'arrayswap': ArrayWrapper(np.arange(4, dtype='i').byteswap().newbyteorder()),
-              'ndarraylil': np.array([(7, 'a'), (8, 'b'), (9, 'c'), (9, 'c')],
-                                  dtype='<i4,|S1').view(table.NdarrayMixin),
-              'ndarraybig': np.array([(7, 'a'), (8, 'b'), (9, 'c'), (9, 'c')],
-                                  dtype='>i4,|S1').view(table.NdarrayMixin),
-              }
+MIXIN_COLS = {
+    'quantity': [0, 1, 2, 3] * u.m,
+    'longitude': coordinates.Longitude(
+        [0.0, 1.0, 5.0, 6.0] * u.deg, wrap_angle=180.0 * u.deg
+    ),
+    'latitude': coordinates.Latitude([5.0, 6.0, 10.0, 11.0] * u.deg),
+    'time': time.Time([2000, 2001, 2002, 2003], format='jyear'),
+    'timedelta': time.TimeDelta([1, 2, 3, 4], format='jd'),
+    'skycoord': coordinates.SkyCoord(ra=[0, 1, 2, 3] * u.deg, dec=[0, 1, 2, 3] * u.deg),
+    'sphericalrep': coordinates.SphericalRepresentation(
+        [0, 1, 2, 3] * u.deg, [0, 1, 2, 3] * u.deg, 1 * u.kpc
+    ),
+    'cartesianrep': coordinates.CartesianRepresentation(
+        [0, 1, 2, 3] * u.pc, [4, 5, 6, 7] * u.pc, [9, 8, 8, 6] * u.pc
+    ),
+    'sphericaldiff': coordinates.SphericalCosLatDifferential(
+        [0, 1, 2, 3] * u.mas / u.yr, [0, 1, 2, 3] * u.mas / u.yr, 10 * u.km / u.s
+    ),
+    'arraywrap': ArrayWrapper([0, 1, 2, 3]),
+    'arrayswap': ArrayWrapper(np.arange(4, dtype='i').byteswap().newbyteorder()),
+    'ndarraylil': np.array(
+        [(7, 'a'), (8, 'b'), (9, 'c'), (9, 'c')], dtype='<i4,|S1'
+    ).view(table.NdarrayMixin),
+    'ndarraybig': np.array(
+        [(7, 'a'), (8, 'b'), (9, 'c'), (9, 'c')], dtype='>i4,|S1'
+    ).view(table.NdarrayMixin),
+}
 MIXIN_COLS['earthlocation'] = coordinates.EarthLocation(
-    lon=MIXIN_COLS['longitude'], lat=MIXIN_COLS['latitude'],
-    height=MIXIN_COLS['quantity'])
+    lon=MIXIN_COLS['longitude'],
+    lat=MIXIN_COLS['latitude'],
+    height=MIXIN_COLS['quantity'],
+)
 MIXIN_COLS['sphericalrepdiff'] = coordinates.SphericalRepresentation(
-    MIXIN_COLS['sphericalrep'], differentials=MIXIN_COLS['sphericaldiff'])
+    MIXIN_COLS['sphericalrep'], differentials=MIXIN_COLS['sphericaldiff']
+)
 
 
 @pytest.fixture(params=sorted(MIXIN_COLS))
@@ -178,16 +205,20 @@ def mixin_cols(request):
 
 @pytest.fixture(params=[False, True])
 def T1(request):
-    T = QTable.read([' a b c d',
-                     ' 2 c 7.0 0',
-                     ' 2 b 5.0 1',
-                     ' 2 b 6.0 2',
-                     ' 2 a 4.0 3',
-                     ' 0 a 0.0 4',
-                     ' 1 b 3.0 5',
-                     ' 1 a 2.0 6',
-                     ' 1 a 1.0 7',
-                     ], format='ascii')
+    T = QTable.read(
+        [
+            ' a b c d',
+            ' 2 c 7.0 0',
+            ' 2 b 5.0 1',
+            ' 2 b 6.0 2',
+            ' 2 a 4.0 3',
+            ' 0 a 0.0 4',
+            ' 1 b 3.0 5',
+            ' 1 a 2.0 6',
+            ' 1 a 1.0 7',
+        ],
+        format='ascii',
+    )
     T['q'] = np.arange(len(T)) * u.m
     T.meta.update({'ta': 1})
     T['c'].meta.update({'a': 1})

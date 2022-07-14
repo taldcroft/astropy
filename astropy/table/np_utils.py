@@ -6,7 +6,7 @@ Redistribution license restrictions apply.
 """
 
 import collections
-from collections import OrderedDict, Counter
+from collections import Counter, OrderedDict
 from collections.abc import Sequence
 
 import numpy as np
@@ -18,8 +18,9 @@ class TableMergeError(ValueError):
     pass
 
 
-def get_col_name_map(arrays, common_names, uniq_col_name='{col_name}_{table_name}',
-                     table_names=None):
+def get_col_name_map(
+    arrays, common_names, uniq_col_name='{col_name}_{table_name}', table_names=None
+):
     """
     Find the column names mapping when merging the list of structured ndarrays
     ``arrays``.  It is assumed that col names in ``common_names`` are to be
@@ -55,7 +56,9 @@ def get_col_name_map(arrays, common_names, uniq_col_name='{col_name}_{table_name
                 others = list(arrays)
                 others.pop(idx)
                 if any(name in other.dtype.names for other in others):
-                    out_name = uniq_col_name.format(table_name=table_name, col_name=name)
+                    out_name = uniq_col_name.format(
+                        table_name=table_name, col_name=name
+                    )
                 col_name_list.append(out_name)
 
             col_name_map[out_name][idx] = name
@@ -64,9 +67,12 @@ def get_col_name_map(arrays, common_names, uniq_col_name='{col_name}_{table_name
     col_name_count = Counter(col_name_list)
     repeated_names = [name for name, count in col_name_count.items() if count > 1]
     if repeated_names:
-        raise TableMergeError('Merging column names resulted in duplicates: {}.  '
-                              'Change uniq_col_name or table_names args to fix this.'
-                              .format(repeated_names))
+        raise TableMergeError(
+            'Merging column names resulted in duplicates: {}.  '
+            'Change uniq_col_name or table_names args to fix this.'.format(
+                repeated_names
+            )
+        )
 
     # Convert col_name_map to a regular dict with tuple (immutable) values
     col_name_map = OrderedDict((name, col_name_map[name]) for name in col_name_list)
@@ -97,8 +103,11 @@ def get_descrs(arrays, col_name_map):
         except TableMergeError as tme:
             # Beautify the error message when we are trying to merge columns with incompatible
             # types by including the name of the columns that originated the error.
-            raise TableMergeError("The '{}' columns have incompatible types: {}"
-                                  .format(names[0], tme._incompat_types)) from tme
+            raise TableMergeError(
+                "The '{}' columns have incompatible types: {}".format(
+                    names[0], tme._incompat_types
+                )
+            ) from tme
 
         # Make sure all input shapes are the same
         uniq_shapes = {col.shape[1:] for col in in_cols}
@@ -121,8 +130,10 @@ def common_dtype(cols):
     np.bool_, np.object_, np.number, np.character, np.void
     """
     np_types = (np.bool_, np.object_, np.number, np.character, np.void)
-    uniq_types = {tuple(issubclass(col.dtype.type, np_type) for np_type in np_types)
-                  for col in cols}
+    uniq_types = {
+        tuple(issubclass(col.dtype.type, np_type) for np_type in np_types)
+        for col in cols
+    }
     if len(uniq_types) > 1:
         # Embed into the exception the actual list of incompatible types.
         incompat_types = [col.dtype.name for col in cols]

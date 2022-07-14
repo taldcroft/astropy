@@ -64,6 +64,7 @@ class Epsilon:
     val : object
         Original value
     '''
+
     __slots__ = ('val',)
 
     def __init__(self, val):
@@ -99,6 +100,7 @@ class Node:
     data : list or int
         Node data
     '''
+
     __lt__ = lambda x, y: x.key < y.key
     __le__ = lambda x, y: x.key <= y.key
     __eq__ = lambda x, y: x.key == y.key
@@ -160,6 +162,7 @@ class BST:
         Whether the values of the index must be unique.
         Defaults to False.
     '''
+
     NodeClass = Node
 
     def __init__(self, data, row_index, unique=False):
@@ -380,9 +383,12 @@ class BST:
     def _is_valid(self, node):
         if node is None:
             return True
-        return (node.left is None or node.left <= node) and \
-            (node.right is None or node.right >= node) and \
-            self._is_valid(node.left) and self._is_valid(node.right)
+        return (
+            (node.left is None or node.left <= node)
+            and (node.right is None or node.right >= node)
+            and self._is_valid(node.left)
+            and self._is_valid(node.right)
+        )
 
     def range(self, lower, upper, bounds=(True, True)):
         '''
@@ -434,7 +440,7 @@ class BST:
         return lst
 
     def _same_prefix(self, val, node, lst):
-        prefix = node.key[:len(val)]
+        prefix = node.key[: len(val)]
         if prefix == val:
             lst.append(node)
         if prefix <= val and node.right is not None:
@@ -464,8 +470,7 @@ class BST:
     def _height(self, node):
         if node is None:
             return -1
-        return max(self._height(node.left),
-                   self._height(node.right)) + 1
+        return max(self._height(node.left), self._height(node.right)) + 1
 
     def replace_rows(self, row_map):
         '''

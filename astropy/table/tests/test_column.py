@@ -1,21 +1,19 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from astropy.utils.tests.test_metadata import MetaBaseTest
 import operator
 import warnings
 
-import pytest
 import numpy as np
+import pytest
 from numpy.testing import assert_array_equal
 
-from astropy.tests.helper import assert_follows_unicode_guidelines
-from astropy import table
-from astropy import time
+from astropy import table, time
 from astropy import units as u
+from astropy.tests.helper import assert_follows_unicode_guidelines
+from astropy.utils.tests.test_metadata import MetaBaseTest
 
 
-class TestColumn():
-
+class TestColumn:
     def test_subclass(self, Column):
         c = Column(name='a')
         assert isinstance(c, np.ndarray)
@@ -29,12 +27,14 @@ class TestColumn():
         arr = np.array([1, 2, 3])
         c = Column(arr, name='a')
 
-        for op, test_equal in ((operator.eq, True),
-                               (operator.ne, False),
-                               (operator.ge, True),
-                               (operator.gt, False),
-                               (operator.le, True),
-                               (operator.lt, False)):
+        for op, test_equal in (
+            (operator.eq, True),
+            (operator.ne, False),
+            (operator.ge, True),
+            (operator.gt, False),
+            (operator.le, True),
+            (operator.lt, False),
+        ):
             for eq in (op(c, arr), op(arr, c)):
 
                 assert np.all(eq) if test_equal else not np.any(eq)
@@ -54,11 +54,13 @@ class TestColumn():
         arr = np.array([1, 2, 3])
         c = Column(arr, name='a')
 
-        for ufunc, test_true in ((np.isfinite, True),
-                                 (np.isinf, False),
-                                 (np.isnan, False),
-                                 (np.sign, True),
-                                 (np.signbit, False)):
+        for ufunc, test_true in (
+            (np.isfinite, True),
+            (np.isinf, False),
+            (np.isnan, False),
+            (np.sign, True),
+            (np.signbit, False),
+        ):
             result = ufunc(c)
             assert len(result) == len(c)
             assert np.all(result) if test_true else not np.any(result)
@@ -76,17 +78,19 @@ class TestColumn():
     def test_format(self, Column):
         """Show that the formatted output from str() works"""
         from astropy import conf
+
         with conf.set_temp('max_lines', 8):
-            c1 = Column(np.arange(2000), name='a', dtype=float,
-                        format='%6.2f')
-            assert str(c1).splitlines() == ['   a   ',
-                                            '-------',
-                                            '   0.00',
-                                            '   1.00',
-                                            '    ...',
-                                            '1998.00',
-                                            '1999.00',
-                                            'Length = 2000 rows']
+            c1 = Column(np.arange(2000), name='a', dtype=float, format='%6.2f')
+            assert str(c1).splitlines() == [
+                '   a   ',
+                '-------',
+                '   0.00',
+                '   1.00',
+                '    ...',
+                '1998.00',
+                '1999.00',
+                'Length = 2000 rows',
+            ]
 
     def test_convert_numpy_array(self, Column):
         d = Column([1, 2, 3], name='a', dtype='i8')
@@ -108,10 +112,10 @@ class TestColumn():
         output that has a different shape into an ndarray view.  Without this a
         method call like c.mean() returns a Column array object with length=1."""
         # Mean and sum for a 1-d float column
-        c = table.Column(name='a', data=[1., 2., 3.])
+        c = table.Column(name='a', data=[1.0, 2.0, 3.0])
         assert np.allclose(c.mean(), 2.0)
         assert isinstance(c.mean(), (np.floating, float))
-        assert np.allclose(c.sum(), 6.)
+        assert np.allclose(c.sum(), 6.0)
         assert isinstance(c.sum(), (np.floating, float))
 
         # Non-reduction ufunc preserves Column class
@@ -123,8 +127,7 @@ class TestColumn():
         assert isinstance(c.sum(), (np.integer, int))
 
         # Sum for a 2-d int column
-        c = table.Column(name='a', data=[[1, 2, 3],
-                                         [4, 5, 6]])
+        c = table.Column(name='a', data=[[1, 2, 3], [4, 5, 6]])
         assert c.sum() == 21
         assert isinstance(c.sum(), (np.integer, int))
         assert np.all(c.sum(axis=0) == [5, 7, 9])
@@ -132,10 +135,10 @@ class TestColumn():
         assert isinstance(c.sum(axis=0), np.ndarray)
 
         # Sum and mean for a 1-d masked column
-        c = table.MaskedColumn(name='a', data=[1., 2., 3.], mask=[0, 0, 1])
+        c = table.MaskedColumn(name='a', data=[1.0, 2.0, 3.0], mask=[0, 0, 1])
         assert np.allclose(c.mean(), 1.5)
         assert isinstance(c.mean(), (np.floating, float))
-        assert np.allclose(c.sum(), 3.)
+        assert np.allclose(c.sum(), 3.0)
         assert isinstance(c.sum(), (np.floating, float))
 
     def test_name_none(self, Column):
@@ -169,16 +172,21 @@ class TestColumn():
         Test for issue #3023: when calling getitem with a MaskedArray subclass
         the original object attributes are not copied.
         """
-        c1 = Column([1, 2, 3], name='a', unit='m', format='%i',
-                    description='aa', meta={'a': 1})
+        c1 = Column(
+            [1, 2, 3], name='a', unit='m', format='%i', description='aa', meta={'a': 1}
+        )
         c1.name = 'b'
         c1.unit = 'km'
         c1.format = '%d'
         c1.description = 'bb'
         c1.meta = {'bbb': 2}
 
-        for item in (slice(None, None), slice(None, 1), np.array([0, 2]),
-                     np.array([False, True, False])):
+        for item in (
+            slice(None, None),
+            slice(None, 1),
+            np.array([0, 2]),
+            np.array([False, True, False]),
+        ):
             c2 = c1[item]
             assert c2.name == 'b'
             assert c2.unit is u.km
@@ -195,16 +203,22 @@ class TestColumn():
     def test_to_quantity(self, Column):
         d = Column([1, 2, 3], name='a', dtype="f8", unit="m")
 
-        assert np.all(d.quantity == ([1, 2, 3.] * u.m))
-        assert np.all(d.quantity.value == ([1, 2, 3.] * u.m).value)
+        assert np.all(d.quantity == ([1, 2, 3.0] * u.m))
+        assert np.all(d.quantity.value == ([1, 2, 3.0] * u.m).value)
         assert np.all(d.quantity == d.to('m'))
         assert np.all(d.quantity.value == d.to('m').value)
 
-        np.testing.assert_allclose(d.to(u.km).value, ([.001, .002, .003] * u.km).value)
-        np.testing.assert_allclose(d.to('km').value, ([.001, .002, .003] * u.km).value)
+        np.testing.assert_allclose(
+            d.to(u.km).value, ([0.001, 0.002, 0.003] * u.km).value
+        )
+        np.testing.assert_allclose(
+            d.to('km').value, ([0.001, 0.002, 0.003] * u.km).value
+        )
 
-        np.testing.assert_allclose(d.to(u.MHz, u.equivalencies.spectral()).value,
-                                   [299.792458, 149.896229, 99.93081933])
+        np.testing.assert_allclose(
+            d.to(u.MHz, u.equivalencies.spectral()).value,
+            [299.792458, 149.896229, 99.93081933],
+        )
 
         d_nounit = Column([1, 2, 3], name='a', dtype="f8", unit=None)
         with pytest.raises(u.UnitsError):
@@ -263,7 +277,9 @@ class TestColumn():
             i0 = int_type(0)
             i1 = int_type(1)
             assert np.all(c[i0] == [1, 2])
-            assert type(c[i0]) == (np.ma.MaskedArray if hasattr(Column, 'mask') else np.ndarray)
+            assert type(c[i0]) == (
+                np.ma.MaskedArray if hasattr(Column, 'mask') else np.ndarray
+            )
             assert c[i0].shape == (2,)
 
             c01 = c[i0:i1]
@@ -282,8 +298,15 @@ class TestColumn():
             assert c01.shape == (1,)
 
     def test_insert_basic(self, Column):
-        c = Column([0, 1, 2], name='a', dtype=int, unit='mJy', format='%i',
-                   description='test column', meta={'c': 8, 'd': 12})
+        c = Column(
+            [0, 1, 2],
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
 
         # Basic insert
         c1 = c.insert(1, 100)
@@ -352,8 +375,7 @@ class TestColumn():
             c.insert(0, 1)
 
     def test_insert_multidim(self, Column):
-        c = Column([[1, 2],
-                    [3, 4]], name='a', dtype=int)
+        c = Column([[1, 2], [3, 4]], name='a', dtype=int)
 
         # Basic insert
         c1 = c.insert(1, [100, 200])
@@ -372,12 +394,12 @@ class TestColumn():
 
         # Basic insert
         c1 = c.insert(1, [100, 200])
-        assert np.all(c1 == np.array(['a', [100, 200], 1, None],
-                                     dtype=object))
+        assert np.all(c1 == np.array(['a', [100, 200], 1, None], dtype=object))
 
     def test_insert_masked(self):
-        c = table.MaskedColumn([0, 1, 2], name='a', fill_value=9999,
-                               mask=[False, True, False])
+        c = table.MaskedColumn(
+            [0, 1, 2], name='a', fill_value=9999, mask=[False, True, False]
+        )
 
         # Basic insert
         c1 = c.insert(1, 100)
@@ -398,8 +420,7 @@ class TestColumn():
         assert np.all(c[0].mask == [True, False])
 
     def test_insert_masked_multidim(self):
-        c = table.MaskedColumn([[1, 2],
-                                [3, 4]], name='a', dtype=int)
+        c = table.MaskedColumn([[1, 2], [3, 4]], name='a', dtype=int)
 
         c1 = c.insert(1, [100, 200], mask=True)
         assert np.all(c1.data.data == [[1, 2], [100, 200], [3, 4]])
@@ -424,7 +445,7 @@ class TestColumn():
             t['a'].mask = [True, False]
 
 
-class TestAttrEqual():
+class TestAttrEqual:
     """Bunch of tests originally from ATpy that test the attrs_equal method."""
 
     def test_5(self, Column):
@@ -433,68 +454,177 @@ class TestAttrEqual():
         assert c1.attrs_equal(c2)
 
     def test_6(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert c1.attrs_equal(c2)
 
     def test_7(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='b', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='b',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_8(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=float, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=float,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_9(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=int, unit='erg.cm-2.s-1.Hz-1', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=int,
+            unit='erg.cm-2.s-1.Hz-1',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_10(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=int, unit='mJy', format='%g',
-                    description='test column', meta={'c': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%g',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_11(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='another test column', meta={'c': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='another test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_12(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'e': 8, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'e': 8, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_13(self, Column):
-        c1 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 8, 'd': 12})
-        c2 = Column(name='a', dtype=int, unit='mJy', format='%i',
-                    description='test column', meta={'c': 9, 'd': 12})
+        c1 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 9, 'd': 12},
+        )
         assert not c1.attrs_equal(c2)
 
     def test_col_and_masked_col(self):
-        c1 = table.Column(name='a', dtype=int, unit='mJy', format='%i',
-                          description='test column', meta={'c': 8, 'd': 12})
-        c2 = table.MaskedColumn(name='a', dtype=int, unit='mJy', format='%i',
-                                description='test column', meta={'c': 8, 'd': 12})
+        c1 = table.Column(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
+        c2 = table.MaskedColumn(
+            name='a',
+            dtype=int,
+            unit='mJy',
+            format='%i',
+            description='test column',
+            meta={'c': 8, 'd': 12},
+        )
         assert c1.attrs_equal(c2)
         assert c2.attrs_equal(c1)
+
 
 # Check that the meta descriptor is working as expected. The MetaBaseTest class
 # takes care of defining all the tests, and we simply have to define the class
@@ -520,15 +650,18 @@ def test_getitem_metadata_regression():
 
     # Make sure that meta-data gets propagated with __getitem__
 
-    c = table.Column(data=[1, 2], name='a', description='b', unit='m', format="%i", meta={'c': 8})
+    c = table.Column(
+        data=[1, 2], name='a', description='b', unit='m', format="%i", meta={'c': 8}
+    )
     assert c[1:2].name == 'a'
     assert c[1:2].description == 'b'
     assert c[1:2].unit == 'm'
     assert c[1:2].format == '%i'
     assert c[1:2].meta['c'] == 8
 
-    c = table.MaskedColumn(data=[1, 2], name='a', description='b',
-                           unit='m', format="%i", meta={'c': 8})
+    c = table.MaskedColumn(
+        data=[1, 2], name='a', description='b', unit='m', format="%i", meta={'c': 8}
+    )
     assert c[1:2].name == 'a'
     assert c[1:2].description == 'b'
     assert c[1:2].unit == 'm'
@@ -537,8 +670,9 @@ def test_getitem_metadata_regression():
 
     # As above, but with take() - check the method and the function
 
-    c = table.Column(data=[1, 2, 3], name='a', description='b',
-                     unit='m', format="%i", meta={'c': 8})
+    c = table.Column(
+        data=[1, 2, 3], name='a', description='b', unit='m', format="%i", meta={'c': 8}
+    )
     for subset in [c.take([0, 1]), np.take(c, [0, 1])]:
         assert subset.name == 'a'
         assert subset.description == 'b'
@@ -552,8 +686,9 @@ def test_getitem_metadata_regression():
         assert subset.shape == ()
         assert not isinstance(subset, table.Column)
 
-    c = table.MaskedColumn(data=[1, 2, 3], name='a', description='b',
-                           unit='m', format="%i", meta={'c': 8})
+    c = table.MaskedColumn(
+        data=[1, 2, 3], name='a', description='b', unit='m', format="%i", meta={'c': 8}
+    )
     for subset in [c.take([0, 1]), np.take(c, [0, 1])]:
         assert subset.name == 'a'
         assert subset.description == 'b'
@@ -624,8 +759,10 @@ def test_string_truncation_warning(masked):
     t['a'][1] = 'cc'
     t['a'][:] = 'dd'
 
-    with pytest.warns(table.StringTruncateWarning, match=r'truncated right side '
-                      r'string\(s\) longer than 2 character\(s\)') as w:
+    with pytest.warns(
+        table.StringTruncateWarning,
+        match=r'truncated right side ' r'string\(s\) longer than 2 character\(s\)',
+    ) as w:
         frameinfo = getframeinfo(currentframe())
         t['a'][0] = 'eee'  # replace item with string that gets truncated
     assert t['a'][0] == 'ee'
@@ -635,8 +772,10 @@ def test_string_truncation_warning(masked):
     assert w[0].lineno == frameinfo.lineno + 1
     assert 'test_column' in w[0].filename
 
-    with pytest.warns(table.StringTruncateWarning, match=r'truncated right side '
-                      r'string\(s\) longer than 2 character\(s\)') as w:
+    with pytest.warns(
+        table.StringTruncateWarning,
+        match=r'truncated right side ' r'string\(s\) longer than 2 character\(s\)',
+    ) as w:
         t['a'][:] = ['ff', 'ggg']  # replace item with string that gets truncated
     assert np.all(t['a'] == ['ff', 'gg'])
     assert len(w) == 1
@@ -673,8 +812,10 @@ def test_string_truncation_warning_masked():
 
     mc = table.MaskedColumn(['aa', 'bb'])
 
-    with pytest.warns(table.StringTruncateWarning, match=r'truncated right side '
-                      r'string\(s\) longer than 2 character\(s\)') as w:
+    with pytest.warns(
+        table.StringTruncateWarning,
+        match=r'truncated right side ' r'string\(s\) longer than 2 character\(s\)',
+    ) as w:
         mc[:] = [np.ma.masked, 'ggg']  # replace item with string that gets truncated
     assert mc[1] == 'gg'
     assert np.all(mc.mask == [True, False])
@@ -822,7 +963,9 @@ def test_unicode_sandwich_set(Column):
     c[0] = b'aa'
     assert np.all(c == ['aa', 'def'])
 
-    c[0] = uba  # a-umlaut is a 2-byte character in utf-8, test fails with ascii encoding
+    c[
+        0
+    ] = uba  # a-umlaut is a 2-byte character in utf-8, test fails with ascii encoding
     assert np.all(c == [uba, 'def'])
     assert c.pformat() == ['None', '----', '  ' + uba, ' def']
 
@@ -872,10 +1015,8 @@ def test_unicode_sandwich_compare(class1, class2):
 
 def test_unicode_sandwich_masked_compare():
     """Test the fix for #6839 from #6899."""
-    c1 = table.MaskedColumn(['a', 'b', 'c', 'd'],
-                            mask=[True, False, True, False])
-    c2 = table.MaskedColumn([b'a', b'b', b'c', b'd'],
-                            mask=[True, True, False, False])
+    c1 = table.MaskedColumn(['a', 'b', 'c', 'd'], mask=[True, False, True, False])
+    c2 = table.MaskedColumn([b'a', b'b', b'c', b'd'], mask=[True, True, False, False])
 
     for cmp in ((c1 == c2), (c2 == c1)):
         assert cmp[0] is np.ma.masked
@@ -894,8 +1035,9 @@ def test_unicode_sandwich_masked_compare():
 
 
 def test_structured_masked_column_roundtrip():
-    mc = table.MaskedColumn([(1., 2.), (3., 4.)],
-                            mask=[(False, False), (False, False)], dtype='f8,f8')
+    mc = table.MaskedColumn(
+        [(1.0, 2.0), (3.0, 4.0)], mask=[(False, False), (False, False)], dtype='f8,f8'
+    )
     assert len(mc.dtype.fields) == 2
     mc2 = table.MaskedColumn(mc)
     assert_array_equal(mc2, mc)
@@ -913,10 +1055,14 @@ def test_column_value_access():
     """Can a column's underlying data consistently be accessed via `.value`,
     whether it is a `Column`, `MaskedColumn`, `Quantity`, or `Time`?"""
     data = np.array([1, 2, 3])
-    tbl = table.QTable({'a': table.Column(data),
-                        'b': table.MaskedColumn(data),
-                        'c': u.Quantity(data),
-                        'd': time.Time(data, format='mjd')})
+    tbl = table.QTable(
+        {
+            'a': table.Column(data),
+            'b': table.MaskedColumn(data),
+            'c': u.Quantity(data),
+            'd': time.Time(data, format='mjd'),
+        }
+    )
     assert type(tbl['a'].value) == np.ndarray
     assert type(tbl['b'].value) == np.ma.MaskedArray
     assert type(tbl['c'].value) == np.ndarray
@@ -924,7 +1070,7 @@ def test_column_value_access():
 
 
 def test_masked_column_serialize_method_propagation():
-    mc = table.MaskedColumn([1., 2., 3.], mask=[True, False, True])
+    mc = table.MaskedColumn([1.0, 2.0, 3.0], mask=[True, False, True])
     assert mc.info.serialize_method['ecsv'] == 'null_value'
     mc.info.serialize_method['ecsv'] = 'data_mask'
     assert mc.info.serialize_method['ecsv'] == 'data_mask'

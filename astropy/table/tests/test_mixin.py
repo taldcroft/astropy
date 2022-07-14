@@ -5,24 +5,31 @@ import copy
 import pickle
 from io import StringIO
 
-import pytest
 import numpy as np
+import pytest
 
-from astropy.table.serialize import represent_mixins_as_columns
-from astropy.utils.data_info import ParentDtypeInfo
-from astropy.table.table_helpers import ArrayWrapper
-from astropy.coordinates import EarthLocation, SkyCoord
-from astropy.table import Table, QTable, join, hstack, vstack, Column, NdarrayMixin
-from astropy.table import serialize
-from astropy import time
-from astropy import coordinates
+from astropy import coordinates, time
 from astropy import units as u
+from astropy.coordinates import EarthLocation, SkyCoord
+from astropy.coordinates.tests.helper import skycoord_equal
+from astropy.coordinates.tests.test_representation import representation_equal
+from astropy.table import (
+    Column,
+    NdarrayMixin,
+    QTable,
+    Table,
+    hstack,
+    join,
+    serialize,
+    table_helpers,
+    vstack,
+)
 from astropy.table.column import BaseColumn
-from astropy.table import table_helpers
+from astropy.table.serialize import represent_mixins_as_columns
+from astropy.table.table_helpers import ArrayWrapper
+from astropy.utils.data_info import ParentDtypeInfo
 from astropy.utils.exceptions import AstropyUserWarning
 from astropy.utils.metadata import MergeConflictWarning
-from astropy.coordinates.tests.test_representation import representation_equal
-from astropy.coordinates.tests.helper import skycoord_equal
 
 from .conftest import MIXIN_COLS
 
@@ -39,8 +46,16 @@ def test_attributes(mixin_cols):
     assert m.info.description == 'a'
 
     # Cannot set unit for these classes
-    if isinstance(m, (u.Quantity, coordinates.SkyCoord, time.Time, time.TimeDelta,
-                      coordinates.BaseRepresentationOrDifferential)):
+    if isinstance(
+        m,
+        (
+            u.Quantity,
+            coordinates.SkyCoord,
+            time.Time,
+            time.TimeDelta,
+            coordinates.BaseRepresentationOrDifferential,
+        ),
+    ):
         with pytest.raises(AttributeError):
             m.info.unit = u.m
     else:
@@ -64,8 +79,9 @@ def check_mixin_type(table, table_col, in_col):
     # We check for QuantityInfo rather than just isinstance(col, u.Quantity)
     # since we want to treat EarthLocation as a mixin, even though it is
     # a Quantity subclass.
-    if ((isinstance(in_col.info, u.QuantityInfo) and type(table) is not QTable)
-            or isinstance(in_col, Column)):
+    if (
+        isinstance(in_col.info, u.QuantityInfo) and type(table) is not QTable
+    ) or isinstance(in_col, Column):
         assert type(table_col) is table.ColumnClass
     else:
         assert type(table_col) is type(in_col)
@@ -97,6 +113,7 @@ def test_io_ascii_write():
     this just confirms no exceptions.
     """
     from astropy.io.ascii.connect import _get_connectors_table
+
     t = QTable(MIXIN_COLS)
     for fmt in _get_connectors_table():
         if fmt['Write'] and '.fast_' not in fmt['Format']:
@@ -135,24 +152,30 @@ def test_io_time_write_fits_standard(tmpdir, table_types):
     """
     t = table_types([[1, 2], ['string', 'column']])
     for scale in time.STANDARD_TIME_SCALES:
-        t['a' + scale] = time.Time([[1, 2], [3, 4]], format='cxcsec',
-                                   scale=scale, location=EarthLocation(
-            -2446354, 4237210, 4077985, unit='m'))
-        t['b' + scale] = time.Time(['1999-01-01T00:00:00.123456789',
-                                    '2010-01-01T00:00:00'], scale=scale)
-    t['c'] = [3., 4.]
+        t['a' + scale] = time.Time(
+            [[1, 2], [3, 4]],
+            format='cxcsec',
+            scale=scale,
+            location=EarthLocation(-2446354, 4237210, 4077985, unit='m'),
+        )
+        t['b' + scale] = time.Time(
+            ['1999-01-01T00:00:00.123456789', '2010-01-01T00:00:00'], scale=scale
+        )
+    t['c'] = [3.0, 4.0]
 
     filename = str(tmpdir.join('table-tmp'))
 
     # Show that FITS format succeeds
     with pytest.warns(
-            AstropyUserWarning,
-            match='Time Column "btai" has no specified location, '
-            'but global Time Position is present'):
+        AstropyUserWarning,
+        match='Time Column "btai" has no specified location, '
+        'but global Time Position is present',
+    ):
         t.write(filename, format='fits', overwrite=True)
     with pytest.warns(
-            AstropyUserWarning,
-            match='Time column reference position "TRPOSn" is not specified'):
+        AstropyUserWarning,
+        match='Time column reference position "TRPOSn" is not specified',
+    ):
         tm = table_types.read(filename, format='fits', astropy_native=True)
 
     for scale in time.STANDARD_TIME_SCALES:
@@ -207,24 +230,30 @@ def test_io_time_write_fits_local(tmpdir, table_types):
     local time scale.
     """
     t = table_types([[1, 2], ['string', 'column']])
-    t['a_local'] = time.Time([[50001, 50002], [50003, 50004]],
-                             format='mjd', scale='local',
-                             location=EarthLocation(-2446354, 4237210, 4077985,
-                                                    unit='m'))
-    t['b_local'] = time.Time(['1999-01-01T00:00:00.123456789',
-                              '2010-01-01T00:00:00'], scale='local')
-    t['c'] = [3., 4.]
+    t['a_local'] = time.Time(
+        [[50001, 50002], [50003, 50004]],
+        format='mjd',
+        scale='local',
+        location=EarthLocation(-2446354, 4237210, 4077985, unit='m'),
+    )
+    t['b_local'] = time.Time(
+        ['1999-01-01T00:00:00.123456789', '2010-01-01T00:00:00'], scale='local'
+    )
+    t['c'] = [3.0, 4.0]
 
     filename = str(tmpdir.join('table-tmp'))
 
     # Show that FITS format succeeds
 
-    with pytest.warns(AstropyUserWarning,
-                      match='Time Column "b_local" has no specified location'):
+    with pytest.warns(
+        AstropyUserWarning, match='Time Column "b_local" has no specified location'
+    ):
         t.write(filename, format='fits', overwrite=True)
 
-    with pytest.warns(AstropyUserWarning,
-                      match='Time column reference position "TRPOSn" is not specified.'):
+    with pytest.warns(
+        AstropyUserWarning,
+        match='Time column reference position "TRPOSn" is not specified.',
+    ):
         tm = table_types.read(filename, format='fits', astropy_native=True)
 
     for ab in ('a', 'b'):
@@ -326,9 +355,11 @@ def test_join(table_types):
     assert 'one or more key columns are not sortable' in str(exc.value)
 
     # Join does work for a mixin which is a subclass of np.ndarray
-    with pytest.warns(MergeConflictWarning,
-                      match="In merged column 'quantity' the 'description' "
-                            "attribute does not match"):
+    with pytest.warns(
+        MergeConflictWarning,
+        match="In merged column 'quantity' the 'description' "
+        "attribute does not match",
+    ):
         t12 = join(t1, t2, keys=['quantity'])
     assert np.all(t12['a_1'] == t1['a'])
 
@@ -365,8 +396,12 @@ def test_hstack(table_types):
                 assert_table_name_col_equal(t12, name1, col[idx1])
                 assert_table_name_col_equal(t12, name2, col[idx2])
                 for attr in ('description', 'meta'):
-                    assert getattr(t1[name].info, attr) == getattr(t12[name1].info, attr)
-                    assert getattr(t2[name].info, attr) == getattr(t12[name2].info, attr)
+                    assert getattr(t1[name].info, attr) == getattr(
+                        t12[name1].info, attr
+                    )
+                    assert getattr(t2[name].info, attr) == getattr(
+                        t12[name2].info, attr
+                    )
 
 
 def assert_table_name_col_equal(t, name, col):
@@ -412,6 +447,7 @@ def test_info_preserved_pickle_copy_init(mixin_cols):
     Test copy, pickle, and init from class roundtrip preserve info.  This
     tests not only the mixin classes but a regular column as well.
     """
+
     def pickle_roundtrip(c):
         return pickle.loads(pickle.dumps(c))
 
@@ -429,10 +465,12 @@ def test_info_preserved_pickle_copy_init(mixin_cols):
             m2 = func(m)
             for attr in attrs:
                 # non-native byteorder not preserved by last 2 func, _except_ for structured dtype
-                if (attr != 'dtype'
-                        or getattr(m.info.dtype, 'isnative', True)
-                        or m.info.dtype.name.startswith('void')
-                        or func in (copy.copy, copy.deepcopy)):
+                if (
+                    attr != 'dtype'
+                    or getattr(m.info.dtype, 'isnative', True)
+                    or m.info.dtype.name.startswith('void')
+                    or func in (copy.copy, copy.deepcopy)
+                ):
                     original = getattr(m.info, attr)
                 else:
                     # func does not preserve byteorder, check against (native) type.
@@ -511,7 +549,9 @@ def test_insert_row(mixin_cols):
     t0 = t.copy()
     t['m'].info.description = 'd'
     idxs = [0, -1, 1, 2, 3]
-    if isinstance(t['m'], (u.Quantity, Column, time.Time, time.TimeDelta, coordinates.SkyCoord)):
+    if isinstance(
+        t['m'], (u.Quantity, Column, time.Time, time.TimeDelta, coordinates.SkyCoord)
+    ):
         t.insert_row(1, t[-1])
 
         for name in t.colnames:
@@ -535,7 +575,9 @@ def test_insert_row_bad_unit():
     t = QTable([[1] * u.m])
     with pytest.raises(ValueError) as exc:
         t.insert_row(0, (2 * u.m / u.s,))
-    assert "'m / s' (speed/velocity) and 'm' (length) are not convertible" in str(exc.value)
+    assert "'m / s' (speed/velocity) and 'm' (length) are not convertible" in str(
+        exc.value
+    )
 
 
 def test_convert_np_array(mixin_cols):
@@ -558,9 +600,11 @@ def test_assignment_and_copy():
     for name in ('quantity', 'arraywrap'):
         m = MIXIN_COLS[name]
         t0 = QTable([m], names=['m'])
-        for i0, i1 in ((1, 2),
-                       (slice(0, 2), slice(1, 3)),
-                       (np.array([1, 2]), np.array([2, 3]))):
+        for i0, i1 in (
+            (1, 2),
+            (slice(0, 2), slice(1, 3)),
+            (np.array([1, 2]), np.array([2, 3])),
+        ):
             t = t0.copy()
             t['m'][i0] = m[i1]
             if name == 'arraywrap':
@@ -614,11 +658,7 @@ def test_quantity_representation():
     Test that table representation of quantities does not have unit
     """
     t = QTable([[1, 2] * u.m])
-    assert t.pformat() == ['col0',
-                           ' m  ',
-                           '----',
-                           ' 1.0',
-                           ' 2.0']
+    assert t.pformat() == ['col0', ' m  ', '----', ' 1.0', ' 2.0']
 
 
 def test_representation_representation():
@@ -628,38 +668,40 @@ def test_representation_representation():
     # With no unit we get "None" in the unit row
     c = coordinates.CartesianRepresentation([0], [1], [0], unit=u.one)
     t = Table([c])
-    assert t.pformat() == ['    col0    ',
-                           '------------',
-                           '(0., 1., 0.)']
+    assert t.pformat() == ['    col0    ', '------------', '(0., 1., 0.)']
 
     c = coordinates.CartesianRepresentation([0], [1], [0], unit='m')
     t = Table([c])
-    assert t.pformat() == ['    col0    ',
-                           '     m      ',
-                           '------------',
-                           '(0., 1., 0.)']
+    assert t.pformat() == [
+        '    col0    ',
+        '     m      ',
+        '------------',
+        '(0., 1., 0.)',
+    ]
 
-    c = coordinates.SphericalRepresentation([10]*u.deg, [20]*u.deg, [1]*u.pc)
+    c = coordinates.SphericalRepresentation([10] * u.deg, [20] * u.deg, [1] * u.pc)
     t = Table([c])
-    assert t.pformat() == ['     col0     ',
-                           ' deg, deg, pc ',
-                           '--------------',
-                           '(10., 20., 1.)']
+    assert t.pformat() == [
+        '     col0     ',
+        ' deg, deg, pc ',
+        '--------------',
+        '(10., 20., 1.)',
+    ]
 
-    c = coordinates.UnitSphericalRepresentation([10]*u.deg, [20]*u.deg)
+    c = coordinates.UnitSphericalRepresentation([10] * u.deg, [20] * u.deg)
     t = Table([c])
-    assert t.pformat() == ['   col0   ',
-                           '   deg    ',
-                           '----------',
-                           '(10., 20.)']
+    assert t.pformat() == ['   col0   ', '   deg    ', '----------', '(10., 20.)']
 
     c = coordinates.SphericalCosLatDifferential(
-        [10]*u.mas/u.yr, [2]*u.mas/u.yr, [10]*u.km/u.s)
+        [10] * u.mas / u.yr, [2] * u.mas / u.yr, [10] * u.km / u.s
+    )
     t = Table([c])
-    assert t.pformat() == ['           col0           ',
-                           'mas / yr, mas / yr, km / s',
-                           '--------------------------',
-                           '            (10., 2., 10.)']
+    assert t.pformat() == [
+        '           col0           ',
+        'mas / yr, mas / yr, km / s',
+        '--------------------------',
+        '            (10., 2., 10.)',
+    ]
 
 
 def test_skycoord_representation():
@@ -670,30 +712,28 @@ def test_skycoord_representation():
     # With no unit we get "None" in the unit row
     c = coordinates.SkyCoord([0], [1], [0], representation_type='cartesian')
     t = Table([c])
-    assert t.pformat() == ['     col0     ',
-                           'None,None,None',
-                           '--------------',
-                           '   0.0,1.0,0.0']
+    assert t.pformat() == [
+        '     col0     ',
+        'None,None,None',
+        '--------------',
+        '   0.0,1.0,0.0',
+    ]
 
     # Test that info works with a dynamically changed representation
     c = coordinates.SkyCoord([0], [1], [0], unit='m', representation_type='cartesian')
     t = Table([c])
-    assert t.pformat() == ['    col0   ',
-                           '   m,m,m   ',
-                           '-----------',
-                           '0.0,1.0,0.0']
+    assert t.pformat() == ['    col0   ', '   m,m,m   ', '-----------', '0.0,1.0,0.0']
 
     t['col0'].representation_type = 'unitspherical'
-    assert t.pformat() == ['  col0  ',
-                           'deg,deg ',
-                           '--------',
-                           '90.0,0.0']
+    assert t.pformat() == ['  col0  ', 'deg,deg ', '--------', '90.0,0.0']
 
     t['col0'].representation_type = 'cylindrical'
-    assert t.pformat() == ['    col0    ',
-                           '  m,deg,m   ',
-                           '------------',
-                           '1.0,90.0,0.0']
+    assert t.pformat() == [
+        '    col0    ',
+        '  m,deg,m   ',
+        '------------',
+        '1.0,90.0,0.0',
+    ]
 
 
 @pytest.mark.parametrize('as_ndarray_mixin', [True, False])
@@ -704,12 +744,15 @@ def test_ndarray_mixin(as_ndarray_mixin):
     (which provides full support for structured array Column's). This test shows
     that the end behavior is the same in both cases.
     """
-    a = np.array([(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')],
-                 dtype='<i4,' + ('|U1'))
-    b = np.array([(10, 'aa'), (20, 'bb'), (30, 'cc'), (40, 'dd')],
-                 dtype=[('x', 'i4'), ('y', ('U2'))])
-    c = np.rec.fromrecords([(100., 'raa'), (200., 'rbb'), (300., 'rcc'), (400., 'rdd')],
-                           names=['rx', 'ry'])
+    a = np.array([(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')], dtype='<i4,' + ('|U1'))
+    b = np.array(
+        [(10, 'aa'), (20, 'bb'), (30, 'cc'), (40, 'dd')],
+        dtype=[('x', 'i4'), ('y', ('U2'))],
+    )
+    c = np.rec.fromrecords(
+        [(100.0, 'raa'), (200.0, 'rbb'), (300.0, 'rcc'), (400.0, 'rdd')],
+        names=['rx', 'ry'],
+    )
     d = np.arange(8, dtype='i8').reshape(4, 2)
 
     if as_ndarray_mixin:
@@ -766,7 +809,8 @@ def test_ndarray_mixin(as_ndarray_mixin):
         "     (1, 'a')    (10, 'aa')   (100., 'raa')   0 .. 1",
         "     (2, 'b')    (20, 'bb')   (200., 'rbb')   2 .. 3",
         "     (3, 'c')    (30, 'cc')   (300., 'rcc')   4 .. 5",
-        "     (4, 'd')    (40, 'dd')   (400., 'rdd')   6 .. 7"]
+        "     (4, 'd')    (40, 'dd')   (400., 'rdd')   6 .. 7",
+    ]
 
 
 def test_possible_string_format_functions():
@@ -778,25 +822,13 @@ def test_possible_string_format_functions():
     """
     t = QTable([[1, 2] * u.m])
     t['col0'].info.format = '%.3f'
-    assert t.pformat() == [' col0',
-                           '  m  ',
-                           '-----',
-                           '1.000',
-                           '2.000']
+    assert t.pformat() == [' col0', '  m  ', '-----', '1.000', '2.000']
 
     t['col0'].info.format = 'hi {:.3f}'
-    assert t.pformat() == ['  col0  ',
-                           '   m    ',
-                           '--------',
-                           'hi 1.000',
-                           'hi 2.000']
+    assert t.pformat() == ['  col0  ', '   m    ', '--------', 'hi 1.000', 'hi 2.000']
 
     t['col0'].info.format = '.4f'
-    assert t.pformat() == [' col0 ',
-                           '  m   ',
-                           '------',
-                           '1.0000',
-                           '2.0000']
+    assert t.pformat() == [' col0 ', '  m   ', '------', '1.0000', '2.0000']
 
 
 def test_rename_mixin_columns(mixin_cols):
@@ -879,6 +911,7 @@ def test_ensure_input_info_is_unchanged(table_cls):
 def test_bad_info_class():
     """Make a mixin column class that does not trigger the machinery to generate
     a pure column representation"""
+
     class MyArrayWrapper(ArrayWrapper):
         info = ParentDtypeInfo()
 

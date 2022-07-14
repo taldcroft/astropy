@@ -45,6 +45,7 @@ Example usage of ``showtable``:
 import argparse
 import textwrap
 import warnings
+
 from astropy import log
 from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
@@ -61,18 +62,19 @@ def showtable(filename, args):
 
     """
     if args.info and args.stats:
-        warnings.warn('--info and --stats cannot be used together',
-                      AstropyUserWarning)
-    if (any((args.max_lines, args.max_width, args.hide_unit, args.show_dtype))
-            and (args.info or args.stats)):
-        warnings.warn('print parameters are ignored if --info or --stats is '
-                      'used', AstropyUserWarning)
+        warnings.warn('--info and --stats cannot be used together', AstropyUserWarning)
+    if any((args.max_lines, args.max_width, args.hide_unit, args.show_dtype)) and (
+        args.info or args.stats
+    ):
+        warnings.warn(
+            'print parameters are ignored if --info or --stats is ' 'used',
+            AstropyUserWarning,
+        )
 
     # these parameters are passed to Table.read if they are specified in the
     # command-line
     read_kwargs = ('hdu', 'format', 'table_id', 'delimiter')
-    kwargs = {k: v for k, v in vars(args).items()
-              if k in read_kwargs and v is not None}
+    kwargs = {k: v for k, v in vars(args).items() if k in read_kwargs and v is not None}
     try:
         table = Table.read(filename, **kwargs)
         if args.info:
@@ -81,9 +83,12 @@ def showtable(filename, args):
             table.info('stats')
         else:
             formatter = table.more if args.more else table.pprint
-            formatter(max_lines=args.max_lines, max_width=args.max_width,
-                      show_unit=(False if args.hide_unit else None),
-                      show_dtype=(True if args.show_dtype else None))
+            formatter(
+                max_lines=args.max_lines,
+                max_width=args.max_width,
+                show_unit=(False if args.hide_unit else None),
+                show_dtype=(True if args.show_dtype else None),
+            )
     except OSError as e:
         log.error(str(e))
 
@@ -91,7 +96,8 @@ def showtable(filename, args):
 def main(args=None):
     """The main function called by the `showtable` script."""
     parser = argparse.ArgumentParser(
-        description=textwrap.dedent("""
+        description=textwrap.dedent(
+            """
             Print tables from ASCII, FITS, HDF5, VOTable file(s).  The tables
             are read with 'astropy.table.Table.read' and are printed with
             'astropy.table.Table.pprint'. The default behavior is to make the
@@ -101,35 +107,52 @@ def main(args=None):
             ``max-width=-1``, respectively. The complete list of supported
             formats can be found at
             http://astropy.readthedocs.io/en/latest/io/unified.html#built-in-table-readers-writers
-        """))
+        """
+        )
+    )
 
     addarg = parser.add_argument
     addarg('filename', nargs='+', help='path to one or more files')
 
-    addarg('--format', help='input table format, should be specified if it '
-           'cannot be automatically detected')
-    addarg('--more', action='store_true',
-           help='use the pager mode from Table.more')
-    addarg('--info', action='store_true',
-           help='show information about the table columns')
-    addarg('--stats', action='store_true',
-           help='show statistics about the table columns')
+    addarg(
+        '--format',
+        help='input table format, should be specified if it '
+        'cannot be automatically detected',
+    )
+    addarg('--more', action='store_true', help='use the pager mode from Table.more')
+    addarg(
+        '--info', action='store_true', help='show information about the table columns'
+    )
+    addarg(
+        '--stats', action='store_true', help='show statistics about the table columns'
+    )
 
     # pprint arguments
     pprint_args = parser.add_argument_group('pprint arguments')
     addarg = pprint_args.add_argument
-    addarg('--max-lines', type=int,
-           help='maximum number of lines in table output (default=screen '
-           'length, -1 for no limit)')
-    addarg('--max-width', type=int,
-           help='maximum width in table output (default=screen width, '
-           '-1 for no limit)')
-    addarg('--hide-unit', action='store_true',
-           help='hide the header row for unit (which is shown '
-           'only if one or more columns has a unit)')
-    addarg('--show-dtype', action='store_true',
-           help='always include a header row for column dtypes '
-           '(otherwise shown only if any column is multidimensional)')
+    addarg(
+        '--max-lines',
+        type=int,
+        help='maximum number of lines in table output (default=screen '
+        'length, -1 for no limit)',
+    )
+    addarg(
+        '--max-width',
+        type=int,
+        help='maximum width in table output (default=screen width, ' '-1 for no limit)',
+    )
+    addarg(
+        '--hide-unit',
+        action='store_true',
+        help='hide the header row for unit (which is shown '
+        'only if one or more columns has a unit)',
+    )
+    addarg(
+        '--show-dtype',
+        action='store_true',
+        help='always include a header row for column dtypes '
+        '(otherwise shown only if any column is multidimensional)',
+    )
 
     # ASCII-specific arguments
     ascii_args = parser.add_argument_group('ASCII arguments')

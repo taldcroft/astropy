@@ -1,14 +1,12 @@
-from os.path import abspath, dirname, join
 import textwrap
+from os.path import abspath, dirname, join
 
 import pytest
 
-from astropy.coordinates import SkyCoord
-from astropy.time import Time
-
-from astropy.table.table import Table
 from astropy import extern
-
+from astropy.coordinates import SkyCoord
+from astropy.table.table import Table
+from astropy.time import Time
 from astropy.utils.compat.optional_deps import HAS_BLEACH, HAS_IPYTHON  # noqa
 from astropy.utils.misc import _NOT_OVERWRITING_MSG_MATCH
 
@@ -73,17 +71,15 @@ $(document).ready(function() {
 </html>
 """
 
-TPL = ('   <tr>\n'
-       '    <td>{0}</td>\n'
-       '    <td>{1}</td>\n'
-       '   </tr>')
+TPL = '   <tr>\n' '    <td>{0}</td>\n' '    <td>{1}</td>\n' '   </tr>'
 
 
 def format_lines(col1, col2):
     col1_format = getattr(col1.info, 'default_format', lambda x: x)
     col2_format = getattr(col2.info, 'default_format', lambda x: x)
-    return '\n'.join(TPL.format(col1_format(v1), col2_format(v2))
-                     for v1, v2 in zip(col1, col2))
+    return '\n'.join(
+        TPL.format(col1_format(v1), col2_format(v2)) for v1, v2 in zip(col1, col2)
+    )
 
 
 def test_write_jsviewer_default(tmpdir):
@@ -103,7 +99,7 @@ def test_write_jsviewer_default(tmpdir):
         display_length='10, 25, 50, 100, 500, 1000',
         datatables_css_url='https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css',
         datatables_js_url='https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js',
-        jquery_url='https://code.jquery.com/' + JQUERY_MIN_JS
+        jquery_url='https://code.jquery.com/' + JQUERY_MIN_JS,
     )
     with open(tmpfile) as f:
         assert f.read().strip() == ref.strip()
@@ -125,10 +121,14 @@ def test_write_jsviewer_overwrite(tmpdir):
     t.write(tmpfile, format='jsviewer', overwrite=True)
 
 
-@pytest.mark.parametrize('mixin', [
-    Time(['J2000', 'J2001']),
-    Time([50000., 50001.0001], format='mjd'),
-    SkyCoord(ra=[100., 110.], dec=[-10., 10.], unit='deg')])
+@pytest.mark.parametrize(
+    'mixin',
+    [
+        Time(['J2000', 'J2001']),
+        Time([50000.0, 50001.0001], format='mjd'),
+        SkyCoord(ra=[100.0, 110.0], dec=[-10.0, 10.0], unit='deg'),
+    ],
+)
 def test_write_jsviewer_mixin(tmpdir, mixin):
     t = Table()
     t['a'] = [1, 2]
@@ -146,7 +146,7 @@ def test_write_jsviewer_mixin(tmpdir, mixin):
         display_length='10, 25, 50, 100, 500, 1000',
         datatables_css_url='https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css',
         datatables_js_url='https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js',
-        jquery_url='https://code.jquery.com/' + JQUERY_MIN_JS
+        jquery_url='https://code.jquery.com/' + JQUERY_MIN_JS,
     )
     with open(tmpfile) as f:
         assert f.read().strip() == ref.strip()
@@ -160,9 +160,15 @@ def test_write_jsviewer_options(tmpdir):
     t['a'].unit = 'm'
 
     tmpfile = tmpdir.join('test.html').strpath
-    t.write(tmpfile, format='jsviewer', table_id='test', max_lines=3,
-            jskwargs={'display_length': 5}, table_class='display hover',
-            htmldict=dict(raw_html_cols='b'))
+    t.write(
+        tmpfile,
+        format='jsviewer',
+        table_id='test',
+        max_lines=3,
+        jskwargs={'display_length': 5},
+        table_class='display hover',
+        htmldict=dict(raw_html_cols='b'),
+    )
 
     ref = REFERENCE % dict(
         lines=format_lines(t['a'][:3], t['b'][:3]),
@@ -172,7 +178,7 @@ def test_write_jsviewer_options(tmpdir):
         display_length='5, 10, 25, 50, 100, 500, 1000',
         datatables_css_url='https://cdn.datatables.net/1.10.12/css/jquery.dataTables.css',
         datatables_js_url='https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js',
-        jquery_url='https://code.jquery.com/' + JQUERY_MIN_JS
+        jquery_url='https://code.jquery.com/' + JQUERY_MIN_JS,
     )
     with open(tmpfile) as f:
         assert f.read().strip() == ref.strip()
@@ -186,8 +192,9 @@ def test_write_jsviewer_local(tmpdir):
 
     tmpfile = tmpdir.join('test.html').strpath
 
-    t.write(tmpfile, format='jsviewer', table_id='test',
-            jskwargs={'use_local_files': True})
+    t.write(
+        tmpfile, format='jsviewer', table_id='test', jskwargs={'use_local_files': True}
+    )
     ref = REFERENCE % dict(
         lines=format_lines(t['a'], t['b']),
         table_class='display compact',
@@ -195,8 +202,9 @@ def test_write_jsviewer_local(tmpdir):
         length='50',
         display_length='10, 25, 50, 100, 500, 1000',
         datatables_css_url='file://' + join(EXTERN_DIR, 'css', 'jquery.dataTables.css'),
-        datatables_js_url='file://' + join(EXTERN_DIR, 'js', 'jquery.dataTables.min.js'),
-        jquery_url='file://' + join(EXTERN_DIR, 'js', JQUERY_MIN_JS)
+        datatables_js_url='file://'
+        + join(EXTERN_DIR, 'js', 'jquery.dataTables.min.js'),
+        jquery_url='file://' + join(EXTERN_DIR, 'js', JQUERY_MIN_JS),
     )
     with open(tmpfile) as f:
         assert f.read().strip() == ref.strip()
@@ -212,15 +220,23 @@ def test_show_in_notebook():
     htmlstr_windx_named = t.show_in_notebook(show_row_index='realidx').data
     htmlstr_woindx = t.show_in_notebook(show_row_index=False).data
 
-    assert (textwrap.dedent("""
+    assert (
+        textwrap.dedent(
+            """
     <thead><tr><th>idx</th><th>a</th><th>b</th></tr></thead>
     <tr><td>0</td><td>1</td><td>b</td></tr>
     <tr><td>1</td><td>2</td><td>c</td></tr>
     <tr><td>2</td><td>3</td><td>a</td></tr>
     <tr><td>3</td><td>4</td><td>d</td></tr>
     <tr><td>4</td><td>5</td><td>e</td></tr>
-    """).strip() in htmlstr_windx)
+    """
+        ).strip()
+        in htmlstr_windx
+    )
 
-    assert '<thead><tr><th>realidx</th><th>a</th><th>b</th></tr></thead>' in htmlstr_windx_named
+    assert (
+        '<thead><tr><th>realidx</th><th>a</th><th>b</th></tr></thead>'
+        in htmlstr_windx_named
+    )
 
     assert '<thead><tr><th>a</th><th>b</th></tr></thead>' in htmlstr_woindx

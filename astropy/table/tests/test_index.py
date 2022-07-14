@@ -2,19 +2,20 @@
 
 import warnings
 
-import pytest
 import numpy as np
+import pytest
+
+from astropy import units as u
+from astropy.table import Column, QTable, Row, Table, hstack
+from astropy.table.bst import BST
+from astropy.table.column import BaseColumn
+from astropy.table.index import SlicedIndex, get_index
+from astropy.table.soco import SCEngine
+from astropy.table.sorted_array import SortedArray
+from astropy.time import Time
+from astropy.utils.compat.optional_deps import HAS_SORTEDCONTAINERS
 
 from .test_table import SetupData
-from astropy.table.bst import BST
-from astropy.table.sorted_array import SortedArray
-from astropy.table.soco import SCEngine
-from astropy.table import QTable, Row, Table, Column, hstack
-from astropy import units as u
-from astropy.time import Time
-from astropy.table.column import BaseColumn
-from astropy.table.index import get_index, SlicedIndex
-from astropy.utils.compat.optional_deps import HAS_SORTEDCONTAINERS
 
 available_engines = [BST, SortedArray]
 
@@ -30,11 +31,13 @@ def engine(request):
 _col = [1, 2, 3, 4, 5]
 
 
-@pytest.fixture(params=[
-    _col,
-    u.Quantity(_col),
-    Time(_col, format='jyear'),
-])
+@pytest.fixture(
+    params=[
+        _col,
+        u.Quantity(_col),
+        Time(_col, format='jyear'),
+    ]
+)
 def main_col(request):
     return request.param
 
@@ -102,18 +105,22 @@ class TestIndex(SetupData):
         ll = list(index.data.items())
 
         if composite:
-            assert np.all(ll == [((2, 5.1), [1]),
-                                 ((4, 4.0), [0]),
-                                 ((4, 5.0), [5]),
-                                 ((5, 1.1), [3]),
-                                 ((6, 6.0), [4]),
-                                 ((10, 7.0), [2])])
+            assert np.all(
+                ll
+                == [
+                    ((2, 5.1), [1]),
+                    ((4, 4.0), [0]),
+                    ((4, 5.0), [5]),
+                    ((5, 1.1), [3]),
+                    ((6, 6.0), [4]),
+                    ((10, 7.0), [2]),
+                ]
+            )
         else:
-            assert np.all(ll == [((2,), [1]),
-                                 ((4,), [0, 5]),
-                                 ((5,), [3]),
-                                 ((6,), [4]),
-                                 ((10,), [2])])
+            assert np.all(
+                ll
+                == [((2,), [1]), ((4,), [0, 5]), ((5,), [3]), ((6,), [4]), ((10,), [2])]
+            )
         t.remove_indices('a')
         assert len(t.indices) == 0
 
@@ -221,7 +228,7 @@ class TestIndex(SetupData):
         # set boolean mask
         t2 = t.copy()
         mask = t['a'] % 2 == 1
-        t2['a'][mask] = 0.
+        t2['a'][mask] = 0.0
         assert_col_equal(t2['a'], [0, 2, 0, 4, 0])
         assert np.all(t2.indices[0].sorted_data() == [0, 2, 4, 1, 3])
 
@@ -255,13 +262,17 @@ class TestIndex(SetupData):
         assert_col_equal(evens['a'], expected[::2])
         assert_col_equal(reverse['a'], expected[::2][::-1])
         # first ten evens are now zero
-        assert np.all(t.indices[0].sorted_data()
-                      == ([0, 2, 4, 6, 8, 10, 12, 14, 16, 18,
-                           1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
-                          + [i for i in range(20, 50)]))
+        assert np.all(
+            t.indices[0].sorted_data()
+            == (
+                [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+                + [i for i in range(20, 50)]
+            )
+        )
         assert np.all(evens.indices[0].sorted_data() == [i for i in range(25)])
-        assert np.all(reverse.indices[0].sorted_data()
-                      == [i for i in range(24, -1, -1)])
+        assert np.all(
+            reverse.indices[0].sorted_data() == [i for i in range(24, -1, -1)]
+        )
 
         # try different step sizes of slice
         t2 = t[1:20:2]
@@ -406,7 +417,7 @@ class TestIndex(SetupData):
             t2 = t.loc[np.array([1, 4, 2])]
             assert_col_equal(t2['a'], [1, 4, 2])
         assert_col_equal(t2['a'], [1, 4, 2])
-        t2 = t.loc[self.make_val(3): self.make_val(5)]  # range search
+        t2 = t.loc[self.make_val(3) : self.make_val(5)]  # range search
         assert_col_equal(t2['a'], [3, 4, 5])
         t2 = t.loc['b', 5.0:7.0]
         assert_col_equal(t2['b'], [5.1, 6.2, 7.0])
@@ -481,8 +492,11 @@ class TestIndex(SetupData):
 
     def test_updating_row_byindex(self, main_col, table_types, engine):
         self._setup(main_col, table_types)
-        t = Table([['a', 'b', 'c', 'd'], [2, 3, 4, 5], [3, 4, 5, 6]],
-                  names=('a', 'b', 'c'), meta={'name': 'first table'})
+        t = Table(
+            [['a', 'b', 'c', 'd'], [2, 3, 4, 5], [3, 4, 5, 6]],
+            names=('a', 'b', 'c'),
+            meta={'name': 'first table'},
+        )
 
         t.add_index('a', engine=engine)
         t.add_index('b', engine=engine)
@@ -500,8 +514,11 @@ class TestIndex(SetupData):
     def test_invalid_updates(self, main_col, table_types, engine):
         # using .loc and .loc_indices with a value not present should raise an exception
         self._setup(main_col, table_types)
-        t = Table([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]],
-                  names=('a', 'b', 'c'), meta={'name': 'first table'})
+        t = Table(
+            [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]],
+            names=('a', 'b', 'c'),
+            meta={'name': 'first table'},
+        )
 
         t.add_index('a')
         with pytest.raises(ValueError):
@@ -551,10 +568,14 @@ def test_table_index_time_warning(engine):
     assert len(wlist) == 0
 
 
-@pytest.mark.parametrize('col', [
-    Column(np.arange(50000, 50005)),
-    np.arange(50000, 50005) * u.m,
-    Time(np.arange(50000, 50005), format='mjd')])
+@pytest.mark.parametrize(
+    'col',
+    [
+        Column(np.arange(50000, 50005)),
+        np.arange(50000, 50005) * u.m,
+        Time(np.arange(50000, 50005), format='mjd'),
+    ],
+)
 def test_table_index_does_not_propagate_to_column_slices(col):
     # They lost contact to the parent table, so they should also not have
     # information on the indices; this helps prevent large memory usage if,
@@ -574,9 +595,9 @@ def test_table_index_does_not_propagate_to_column_slices(col):
 def test_hstack_qtable_table():
     # Check in particular that indices are initialized or copied correctly
     # for a Column that is being converted to a Quantity.
-    qtab = QTable([np.arange(5.)*u.m], names=['s'])
+    qtab = QTable([np.arange(5.0) * u.m], names=['s'])
     qtab.add_index('s')
-    tab = Table([Column(np.arange(5.), unit=u.s)], names=['t'])
+    tab = Table([Column(np.arange(5.0), unit=u.s)], names=['t'])
     qstack = hstack([qtab, tab])
     assert qstack['t'].info.indices == []
     assert qstack.indices == []

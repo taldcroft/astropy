@@ -31,9 +31,10 @@ Notes
 """
 
 from copy import deepcopy
+
 import numpy as np
 
-from .bst import MinValue, MaxValue
+from .bst import MaxValue, MinValue
 from .sorted_array import SortedArray
 
 
@@ -41,6 +42,7 @@ class QueryError(ValueError):
     '''
     Indicates that a given index cannot handle the supplied query.
     '''
+
     pass
 
 
@@ -63,10 +65,12 @@ class Index:
     unique : bool (defaults to False)
         Whether the values of the index must be unique
     '''
+
     def __init__(self, columns, engine=None, unique=False):
         # Local imports to avoid import problems.
-        from .table import Table, Column
         from astropy.time import Time
+
+        from .table import Column, Table
 
         if columns is not None:
             columns = list(columns)
@@ -99,7 +103,9 @@ class Index:
             for col in columns:
                 if isinstance(col, Time):
                     new_columns.append(col.jd)
-                    remainder = col - col.__class__(col.jd, format='jd', scale=col.scale)
+                    remainder = col - col.__class__(
+                        col.jd, format='jd', scale=col.scale
+                    )
                     new_columns.append(remainder.jd)
                 else:
                     new_columns.append(col)
@@ -198,8 +204,10 @@ class Index:
         elif isinstance(row_specifier, slice):
             col_len = len(self.columns[0])
             return range(*row_specifier.indices(col_len))
-        raise ValueError("Expected int, array of ints, or slice but "
-                         "got {} in remove_rows".format(row_specifier))
+        raise ValueError(
+            "Expected int, array of ints, or slice but "
+            "got {} in remove_rows".format(row_specifier)
+        )
 
     def remove_rows(self, row_specifier):
         '''
@@ -535,8 +543,9 @@ class SlicedIndex:
             self.get_index_or_copy().insert_row(self.orig_coords(pos), vals, columns)
 
     def get_row_specifier(self, row_specifier):
-        return [self.orig_coords(x) for x in
-                self.index.get_row_specifier(row_specifier)]
+        return [
+            self.orig_coords(x) for x in self.index.get_row_specifier(row_specifier)
+        ]
 
     def remove_rows(self, row_specifier):
         if not self._frozen:
@@ -551,9 +560,13 @@ class SlicedIndex:
             self.get_index_or_copy().sort()
 
     def __repr__(self):
-        slice_str = '' if self.original else f' slice={self.start}:{self.stop}:{self.step}'
-        return (f'<{self.__class__.__name__} original={self.original}{slice_str}'
-                f' index={self.index}>')
+        slice_str = (
+            '' if self.original else f' slice={self.start}:{self.stop}:{self.step}'
+        )
+        return (
+            f'<{self.__class__.__name__} original={self.original}{slice_str}'
+            f' index={self.index}>'
+        )
 
     def replace_col(self, prev_col, new_col):
         self.index.replace_col(prev_col, new_col)
@@ -576,6 +589,7 @@ class SlicedIndex:
             Slice for retrieval
         '''
         from .table import Table
+
         if len(self.columns) == 1:
             index = Index([col_slice], engine=self.data.__class__)
             return self.__class__(index, slice(0, 0, None), original=True)
@@ -616,12 +630,14 @@ def get_index(table, table_copy=None, names=None):
 
     """
     if names is not None and table_copy is not None:
-        raise ValueError('one and only one argument from "table_copy" or'
-                         ' "names" is required')
+        raise ValueError(
+            'one and only one argument from "table_copy" or' ' "names" is required'
+        )
 
     if names is None and table_copy is None:
-        raise ValueError('one and only one argument from "table_copy" or'
-                         ' "names" is required')
+        raise ValueError(
+            'one and only one argument from "table_copy" or' ' "names" is required'
+        )
 
     if names is not None:
         names = set(names)
@@ -696,9 +712,11 @@ class _IndexModeContext:
         # Used by copy_on_getitem
         self._orig_classes = []
         if mode not in ('freeze', 'discard_on_copy', 'copy_on_getitem'):
-            raise ValueError("Expected a mode of either 'freeze', "
-                             "'discard_on_copy', or 'copy_on_getitem', got "
-                             "'{}'".format(mode))
+            raise ValueError(
+                "Expected a mode of either 'freeze', "
+                "'discard_on_copy', or 'copy_on_getitem', got "
+                "'{}'".format(mode)
+            )
 
     def __enter__(self):
         if self.mode == 'discard_on_copy':
@@ -896,7 +914,6 @@ class TableLoc:
 
 
 class TableLocIndices(TableLoc):
-
     def __getitem__(self, item):
         """
         Retrieve Table row's indices by value slice.

@@ -4,10 +4,10 @@ import platform
 import warnings
 
 import numpy as np
-from .index import get_index_by_names
 
 from astropy.utils.exceptions import AstropyUserWarning
 
+from .index import get_index_by_names
 
 __all__ = ['TableGroups', 'ColumnGroups']
 
@@ -33,8 +33,8 @@ def _table_group_by(table, keys):
     -------
     grouped_table : Table object with groups attr set accordingly
     """
-    from .table import Table
     from .serialize import represent_mixins_as_columns
+    from .table import Table
 
     # Pre-convert string to tuple of strings, or Table to the underlying structured array
     if isinstance(keys, str):
@@ -45,7 +45,9 @@ def _table_group_by(table, keys):
             if name not in table.colnames:
                 raise ValueError(f'Table does not have key column {name!r}')
             if table.masked and np.any(table[name].mask):
-                raise ValueError(f'Missing values in key column {name!r} are not allowed')
+                raise ValueError(
+                    f'Missing values in key column {name!r} are not allowed'
+                )
 
         # Make a column slice of the table without copying
         table_keys = table.__class__([table[key] for key in keys], copy=False)
@@ -57,14 +59,20 @@ def _table_group_by(table, keys):
     elif isinstance(keys, (np.ndarray, Table)):
         table_keys = keys
         if len(table_keys) != len(table):
-            raise ValueError('Input keys array length {} does not match table length {}'
-                             .format(len(table_keys), len(table)))
+            raise ValueError(
+                'Input keys array length {} does not match table length {}'.format(
+                    len(table_keys), len(table)
+                )
+            )
         table_index = None
         grouped_by_table_cols = False
 
     else:
-        raise TypeError('Keys input must be string, list, tuple, Table or numpy array, but got {}'
-                        .format(type(keys)))
+        raise TypeError(
+            'Keys input must be string, list, tuple, Table or numpy array, but got {}'.format(
+                type(keys)
+            )
+        )
 
     # If there is not already an available index and table_keys is a Table then ensure
     # that all cols (including mixins) are in a form that can sorted with the code below.
@@ -125,8 +133,8 @@ def column_group_by(column, keys):
     -------
     grouped_column : Column object with groups attr set accordingly
     """
-    from .table import Table
     from .serialize import represent_mixins_as_columns
+    from .table import Table
 
     if isinstance(keys, Table):
         keys = represent_mixins_as_columns(keys)
@@ -136,8 +144,11 @@ def column_group_by(column, keys):
         raise TypeError(f'Keys input must be numpy array, but got {type(keys)}')
 
     if len(keys) != len(column):
-        raise ValueError('Input keys array length {} does not match column length {}'
-                         .format(len(keys), len(column)))
+        raise ValueError(
+            'Input keys array length {} does not match column length {}'.format(
+                len(keys), len(column)
+            )
+        )
 
     idx_sort = keys.argsort()
     keys = keys[idx_sort]
@@ -162,9 +173,12 @@ class BaseGroups:
       - ``indices``: index values in parent table or column corresponding to group boundaries
       - ``aggregate()``: method to create new table by aggregating within groups
     """
+
     @property
     def parent(self):
-        return self.parent_column if isinstance(self, ColumnGroups) else self.parent_table
+        return (
+            self.parent_column if isinstance(self, ColumnGroups) else self.parent_table
+        )
 
     def __iter__(self):
         self._iter_index = 0
@@ -178,6 +192,7 @@ class BaseGroups:
             return self.parent[i0:i1]
         else:
             raise StopIteration
+
     __next__ = next
 
     def __getitem__(self, item):
@@ -192,8 +207,10 @@ class BaseGroups:
             try:
                 i0s, i1s = indices0[item], indices1[item]
             except Exception as err:
-                raise TypeError('Index item for groups attribute must be a slice, '
-                                'numpy mask or int array') from err
+                raise TypeError(
+                    'Index item for groups attribute must be a slice, '
+                    'numpy mask or int array'
+                ) from err
             mask = np.zeros(len(parent), dtype=bool)
             # Is there a way to vectorize this in numpy?
             for i0, i1 in zip(i0s, i1s):
@@ -238,8 +255,9 @@ class ColumnGroups(BaseGroups):
             return self._keys
 
     def aggregate(self, func):
-        from .column import MaskedColumn, Column
         from astropy.utils.compat import NUMPY_LT_1_20
+
+        from .column import Column, MaskedColumn
 
         i0s, i1s = self.indices[:-1], self.indices[1:]
         par_col = self.parent_column
@@ -255,7 +273,11 @@ class ColumnGroups(BaseGroups):
                 # https://github.com/astropy/astropy/pull/12825#issuecomment-1082412447
                 # Instead we try the function directly with a 2-element version
                 # of the column
-                if NUMPY_LT_1_20 and not isinstance(par_col, Column) and len(par_col) > 0:
+                if (
+                    NUMPY_LT_1_20
+                    and not isinstance(par_col, Column)
+                    and len(par_col) > 0
+                ):
                     func(par_col[[0, 0]])
 
                 if mean_case:
@@ -265,11 +287,14 @@ class ColumnGroups(BaseGroups):
                         func = np.add
                     vals = func.reduceat(par_col, i0s)
             else:
-                vals = np.array([func(par_col[i0: i1]) for i0, i1 in zip(i0s, i1s)])
+                vals = np.array([func(par_col[i0:i1]) for i0, i1 in zip(i0s, i1s)])
             out = par_col.__class__(vals)
         except Exception as err:
-            raise TypeError("Cannot aggregate column '{}' with type '{}': {}"
-                            .format(par_col.info.name, par_col.info.dtype, err)) from err
+            raise TypeError(
+                "Cannot aggregate column '{}' with type '{}': {}".format(
+                    par_col.info.name, par_col.info.dtype, err
+                )
+            ) from err
 
         out_info = out.info
         for attr in ('name', 'unit', 'format', 'description', 'meta'):
@@ -329,7 +354,9 @@ class TableGroups(BaseGroups):
         # differently in aggregation.  In this case keys will be a Table with
         # keys.meta['grouped_by_table_cols'] == True.  Keys might not be a Table so we
         # need to handle this.
-        grouped_by_table_cols = getattr(self.keys, 'meta', {}).get('grouped_by_table_cols', False)
+        grouped_by_table_cols = getattr(self.keys, 'meta', {}).get(
+            'grouped_by_table_cols', False
+        )
         return self.keys.colnames if grouped_by_table_cols else ()
 
     @property
