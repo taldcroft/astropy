@@ -9,18 +9,26 @@ import pytest
 import numpy as np
 
 from astropy.time import (
-    Time, TimeDelta, OperandTypeError, ScaleValueError, TIME_SCALES,
-    STANDARD_TIME_SCALES, TIME_DELTA_SCALES, TimeDeltaMissingUnitWarning,
+    Time,
+    TimeDelta,
+    OperandTypeError,
+    ScaleValueError,
+    TIME_SCALES,
+    STANDARD_TIME_SCALES,
+    TIME_DELTA_SCALES,
+    TimeDeltaMissingUnitWarning,
 )
 from astropy.utils import iers
 from astropy import units as u
 from astropy.table import Table
 
-allclose_jd = functools.partial(np.allclose, rtol=2. ** -52, atol=0)
-allclose_jd2 = functools.partial(np.allclose, rtol=2. ** -52,
-                                 atol=2. ** -52)  # 20 ps atol
-allclose_sec = functools.partial(np.allclose, rtol=2. ** -52,
-                                 atol=2. ** -52 * 24 * 3600)  # 20 ps atol
+allclose_jd = functools.partial(np.allclose, rtol=2.0**-52, atol=0)
+allclose_jd2 = functools.partial(
+    np.allclose, rtol=2.0**-52, atol=2.0**-52
+)  # 20 ps atol
+allclose_sec = functools.partial(
+    np.allclose, rtol=2.0**-52, atol=2.0**-52 * 24 * 3600
+)  # 20 ps atol
 orig_auto_download = iers.conf.auto_download
 
 
@@ -40,9 +48,14 @@ class TestTimeDelta:
     def setup(self):
         self.t = Time('2010-01-01', scale='utc')
         self.t2 = Time('2010-01-02 00:00:01', scale='utc')
-        self.t3 = Time('2010-01-03 01:02:03', scale='utc', precision=9,
-                       in_subfmt='date_hms', out_subfmt='date_hm',
-                       location=(-75. * u.degree, 30. * u.degree, 500 * u.m))
+        self.t3 = Time(
+            '2010-01-03 01:02:03',
+            scale='utc',
+            precision=9,
+            in_subfmt='date_hms',
+            out_subfmt='date_hm',
+            location=(-75.0 * u.degree, 30.0 * u.degree, 500 * u.m),
+        )
         self.t4 = Time('2010-01-01', scale='local')
         self.dt = TimeDelta(100.0, format='sec')
         self.dt_array = TimeDelta(np.arange(100, 1000, 100), format='sec')
@@ -50,8 +63,9 @@ class TestTimeDelta:
     def test_sub(self):
         # time - time
         dt = self.t2 - self.t
-        assert (repr(dt).startswith("<TimeDelta object: scale='tai' "
-                                    "format='jd' value=1.00001157407"))
+        assert repr(dt).startswith(
+            "<TimeDelta object: scale='tai' " "format='jd' value=1.00001157407"
+        )
         assert allclose_jd(dt.jd, 86401.0 / 86400.0)
         assert allclose_sec(dt.sec, 86401.0)
 
@@ -159,8 +173,9 @@ class TestTimeDelta:
         assert allclose_jd(out.jd, [0.0, -100.0])
         assert not out.isscalar
 
-    @pytest.mark.parametrize('values', [(2455197.5, 2455198.5),
-                                        ([2455197.5], [2455198.5])])
+    @pytest.mark.parametrize(
+        'values', [(2455197.5, 2455198.5), ([2455197.5], [2455198.5])]
+    )
     def test_copy_timedelta(self, values):
         """Test copying the values of a TimeDelta object by passing it into the
         Time initializer.
@@ -196,12 +211,12 @@ class TestTimeDelta:
     def test_mul_div(self):
         for dt in (self.dt, self.dt_array):
             dt2 = dt + dt + dt
-            dt3 = 3. * dt
+            dt3 = 3.0 * dt
             assert allclose_jd(dt2.jd, dt3.jd)
-            dt4 = dt3 / 3.
+            dt4 = dt3 / 3.0
             assert allclose_jd(dt4.jd, dt.jd)
         dt5 = self.dt * np.arange(3)
-        assert dt5[0].jd == 0.
+        assert dt5[0].jd == 0.0
         assert dt5[-1].jd == (self.dt + self.dt).jd
         dt6 = self.dt * [0, 1, 2]
         assert np.all(dt6.jd == dt5.jd)
@@ -212,7 +227,7 @@ class TestTimeDelta:
 
     def test_keep_properties(self):
         # closes #1924 (partially)
-        dt = TimeDelta(1000., format='sec')
+        dt = TimeDelta(1000.0, format='sec')
         for t in (self.t, self.t3):
             ta = t + dt
             assert ta.location is t.location
@@ -273,17 +288,19 @@ class TestTimeDelta:
     def test_from_non_float(self):
         dt = TimeDelta('1.000000000000001', format='jd')
         assert dt != TimeDelta(1.000000000000001, format='jd')  # precision loss.
-        assert dt == TimeDelta(1, .000000000000001, format='jd')
+        assert dt == TimeDelta(1, 0.000000000000001, format='jd')
         dt2 = TimeDelta(Decimal('1.000000000000001'), format='jd')
         assert dt2 == dt
 
     def test_to_value(self):
         dt = TimeDelta(86400.0, format='sec')
-        assert dt.to_value('jd') == 1.
+        assert dt.to_value('jd') == 1.0
         assert dt.to_value('jd', 'str') == '1.0'
         assert dt.to_value('sec', subfmt='str') == '86400.0'
-        with pytest.raises(ValueError, match=("not one of the known formats.*"
-                                              "failed to parse as a unit")):
+        with pytest.raises(
+            ValueError,
+            match=("not one of the known formats.*" "failed to parse as a unit"),
+        ):
             dt.to_value('julian')
 
         with pytest.raises(TypeError, match='missing required format or unit'):
@@ -296,23 +313,29 @@ class TestTimeDeltaScales:
 
     def setup(self):
         # pick a date that includes a leap second for better testing
-        self.iso_times = ['2012-06-30 12:00:00', '2012-06-30 23:59:59',
-                          '2012-07-01 00:00:00', '2012-07-01 12:00:00']
-        self.t = {scale: Time(self.iso_times, scale=scale, precision=9)
-                  for scale in TIME_SCALES}
-        self.dt = {scale: self.t[scale] - self.t[scale][0]
-                   for scale in TIME_SCALES}
+        self.iso_times = [
+            '2012-06-30 12:00:00',
+            '2012-06-30 23:59:59',
+            '2012-07-01 00:00:00',
+            '2012-07-01 12:00:00',
+        ]
+        self.t = {
+            scale: Time(self.iso_times, scale=scale, precision=9)
+            for scale in TIME_SCALES
+        }
+        self.dt = {scale: self.t[scale] - self.t[scale][0] for scale in TIME_SCALES}
 
     def test_delta_scales_definition(self):
         for scale in list(TIME_DELTA_SCALES) + [None]:
-            TimeDelta([0., 1., 10.], format='sec', scale=scale)
+            TimeDelta([0.0, 1.0, 10.0], format='sec', scale=scale)
 
         with pytest.raises(ScaleValueError):
-            TimeDelta([0., 1., 10.], format='sec', scale='utc')
+            TimeDelta([0.0, 1.0, 10.0], format='sec', scale='utc')
 
-    @pytest.mark.parametrize(('scale1', 'scale2'),
-                             list(itertools.product(STANDARD_TIME_SCALES,
-                                                    STANDARD_TIME_SCALES)))
+    @pytest.mark.parametrize(
+        ('scale1', 'scale2'),
+        list(itertools.product(STANDARD_TIME_SCALES, STANDARD_TIME_SCALES)),
+    )
     def test_standard_scales_for_time_minus_time(self, scale1, scale2):
         """T(X) - T2(Y)  -- does T(X) - T2(Y).X and return dT(X)
         and T(X) +/- dT(Y)  -- does (in essence) (T(X).Y +/- dT(Y)).X
@@ -342,7 +365,7 @@ class TestTimeDeltaScales:
         assert allclose_jd(t2_recover.jd, t2.jd)
 
     def test_local_scales_for_time_minus_time(self):
-        """ T1(local) - T2(local) should return dT(local)
+        """T1(local) - T2(local) should return dT(local)
         T1(local) +/- dT(local) or T1(local) +/- Quantity(time-like) should
         also return T(local)
 
@@ -363,7 +386,7 @@ class TestTimeDeltaScales:
         assert t1_recover.scale == 'local'
         assert allclose_jd(t1_recover.jd, t1.jd)
         # check that dT(None) can be subtracted from T(local)
-        dt2 = TimeDelta([10.], format='sec', scale=None)
+        dt2 = TimeDelta([10.0], format='sec', scale=None)
         t3 = t2 - dt2
         assert t3.scale == t2.scale
         # check that time quantity can be subtracted from T(local)
@@ -397,24 +420,24 @@ class TestTimeDeltaScales:
         dt0 = dt_tai - dt_tt
         assert dt0.scale == 'tai'
         # tai and tt have the same scale, so differences should be the same
-        assert allclose_sec(dt0.sec, 0.)
+        assert allclose_sec(dt0.sec, 0.0)
 
         dt_tcg = self.dt['tcg']
         dt1 = dt_tai - dt_tcg
         assert dt1.scale == 'tai'
         # tai and tcg do not have the same scale, so differences different
-        assert not allclose_sec(dt1.sec, 0.)
+        assert not allclose_sec(dt1.sec, 0.0)
 
         t_tai_tcg = self.t['tai'].tcg
         dt_tai_tcg = t_tai_tcg - t_tai_tcg[0]
         dt2 = dt_tai - dt_tai_tcg
         assert dt2.scale == 'tai'
         # but if tcg difference calculated from tai, it should roundtrip
-        assert allclose_sec(dt2.sec, 0.)
+        assert allclose_sec(dt2.sec, 0.0)
         # check that if we put TCG first, we get a TCG scale back
         dt3 = dt_tai_tcg - dt_tai
         assert dt3.scale == 'tcg'
-        assert allclose_sec(dt3.sec, 0.)
+        assert allclose_sec(dt3.sec, 0.0)
 
         for scale in 'tdb', 'tcb', 'ut1':
             with pytest.raises(TypeError):
@@ -425,13 +448,13 @@ class TestTimeDeltaScales:
         dt_tdb = self.dt['tdb']
         dt4 = dt_tcb - dt_tdb
         assert dt4.scale == 'tcb'
-        assert not allclose_sec(dt1.sec, 0.)
+        assert not allclose_sec(dt1.sec, 0.0)
 
         t_tcb_tdb = self.t['tcb'].tdb
         dt_tcb_tdb = t_tcb_tdb - t_tcb_tdb[0]
         dt5 = dt_tcb - dt_tcb_tdb
         assert dt5.scale == 'tcb'
-        assert allclose_sec(dt5.sec, 0.)
+        assert allclose_sec(dt5.sec, 0.0)
 
         for scale in 'utc', 'tai', 'tt', 'tcg', 'ut1':
             with pytest.raises(TypeError):
@@ -441,7 +464,7 @@ class TestTimeDeltaScales:
         dt_ut1 = self.dt['ut1']
         dt5 = dt_ut1 - dt_ut1[-1]
         assert dt5.scale == 'ut1'
-        assert dt5[-1].sec == 0.
+        assert dt5[-1].sec == 0.0
 
         for scale in 'utc', 'tai', 'tt', 'tcg', 'tcb', 'tdb':
             with pytest.raises(TypeError):
@@ -451,15 +474,16 @@ class TestTimeDeltaScales:
         dt_local = self.dt['local']
         dt6 = dt_local - dt_local[-1]
         assert dt6.scale == 'local'
-        assert dt6[-1].sec == 0.
+        assert dt6[-1].sec == 0.0
 
         for scale in 'utc', 'tai', 'tt', 'tcg', 'tcb', 'tdb', 'ut1':
             with pytest.raises(TypeError):
                 dt_local - self.dt[scale]
 
     @pytest.mark.parametrize(
-        ('scale', 'op'), list(itertools.product(TIME_SCALES,
-                                                (operator.add, operator.sub))))
+        ('scale', 'op'),
+        list(itertools.product(TIME_SCALES, (operator.add, operator.sub))),
+    )
     def test_scales_for_delta_scale_is_none(self, scale, op):
         """T(X) +/- dT(None) or T(X) +/- Quantity(time-like)
 
@@ -468,7 +492,7 @@ class TestTimeDeltaScales:
         The one exception is again for X=UTC, where TAI is assumed instead,
         so that a day is always defined as 86400 seconds.
         """
-        dt_none = TimeDelta([0., 1., -1., 1000.], format='sec')
+        dt_none = TimeDelta([0.0, 1.0, -1.0, 1000.0], format='sec')
         assert dt_none.scale is None
         q_time = dt_none.to('s')
 
@@ -503,7 +527,7 @@ class TestTimeDeltaScales:
         days are longer or shorter by one second.
         """
         t = self.t[scale]
-        dt_day = TimeDelta(1., format='jd')
+        dt_day = TimeDelta(1.0, format='jd')
         q_day = dt_day.to('day')
 
         dt_day_leap = t[-1] - t[0]
@@ -579,8 +603,10 @@ def test_python_timedelta_scalar():
 
 
 def test_python_timedelta_vector():
-    td = [[timedelta(days=1), timedelta(days=2)],
-          [timedelta(days=3), timedelta(days=4)]]
+    td = [
+        [timedelta(days=1), timedelta(days=2)],
+        [timedelta(days=3), timedelta(days=4)],
+    ]
 
     td1 = TimeDelta(td, format='datetime')
 
@@ -596,8 +622,10 @@ def test_timedelta_to_datetime():
     assert td.to_datetime() == timedelta(days=1)
 
     td2 = TimeDelta([[1, 2], [3, 4]], format='jd')
-    td = [[timedelta(days=1), timedelta(days=2)],
-          [timedelta(days=3), timedelta(days=4)]]
+    td = [
+        [timedelta(days=1), timedelta(days=2)],
+        [timedelta(days=3), timedelta(days=4)],
+    ]
 
     assert np.all(td2.to_datetime() == td)
 

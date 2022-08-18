@@ -11,8 +11,9 @@ from astropy.time import Time
 from astropy.table import Table
 from astropy.utils.compat.optional_deps import HAS_H5PY
 
-allclose_sec = functools.partial(np.allclose, rtol=2. ** -52,
-                                 atol=2. ** -52 * 24 * 3600)  # 20 ps atol
+allclose_sec = functools.partial(
+    np.allclose, rtol=2.0**-52, atol=2.0**-52 * 24 * 3600
+)  # 20 ps atol
 is_masked = np.ma.is_masked
 
 
@@ -61,12 +62,17 @@ def test_str():
     t = Time(['2000:001', '2000:002'])
     t[1] = np.ma.masked
     assert str(t) == "['2000:001:00:00:00.000' --]"
-    assert repr(t) == "<Time object: scale='utc' format='yday' value=['2000:001:00:00:00.000' --]>"
+    assert (
+        repr(t)
+        == "<Time object: scale='utc' format='yday' value=['2000:001:00:00:00.000' --]>"
+    )
 
-    expected = ["masked_array(data=['2000-01-01 00:00:00.000', --],",
-                '             mask=[False,  True],',
-                "       fill_value='N/A',",
-                "            dtype='<U23')"]
+    expected = [
+        "masked_array(data=['2000-01-01 00:00:00.000', --],",
+        '             mask=[False,  True],',
+        "       fill_value='N/A',",
+        "            dtype='<U23')",
+    ]
 
     # Note that we need to take care to allow for big-endian platforms,
     # for which the dtype will be >U23 instead of <U23, which we do with
@@ -99,10 +105,8 @@ def test_transform():
 
 def test_masked_input():
     v0 = np.ma.MaskedArray([[1, 2], [3, 4]])  # No masked elements
-    v1 = np.ma.MaskedArray([[1, 2], [3, 4]],
-                           mask=[[True, False], [False, False]])
-    v2 = np.ma.MaskedArray([[10, 20], [30, 40]],
-                           mask=[[False, False], [False, True]])
+    v1 = np.ma.MaskedArray([[1, 2], [3, 4]], mask=[[True, False], [False, False]])
+    v2 = np.ma.MaskedArray([[10, 20], [30, 40]], mask=[[False, False], [False, True]])
 
     # Init from various combinations of masked arrays
     t = Time(v0, format='cxcsec')
@@ -198,5 +202,5 @@ def test_serialize_ecsv_masked(serialize_method, tmpdir):
     assert t2['col0'].masked
     assert np.all(t2['col0'].mask == [False, True, False])
     # Serializing formatted_value loses some precision.
-    atol = 0.1*u.us if serialize_method == 'formatted_value' else 1*u.ps
+    atol = 0.1 * u.us if serialize_method == 'formatted_value' else 1 * u.ps
     assert np.all(abs(t2['col0'] - t['col0']) <= atol)

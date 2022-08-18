@@ -65,8 +65,9 @@ def day_frac(val1, val2, factor=None, divisor=None):
     # particular care for the case that frac=0.5 and check>0 or frac=-0.5 and check<0,
     # since in that case if check is large enough, rounding was done the wrong way.
     frac, check = two_sum(sum12 - day, err12)
-    excess = np.where(frac * np.sign(check) != 0.5, np.round(frac),
-                      np.round(frac+2*check))
+    excess = np.where(
+        frac * np.sign(check) != 0.5, np.round(frac), np.round(frac + 2 * check)
+    )
     day += excess
     frac = sum12 - day
     frac += err12
@@ -104,16 +105,16 @@ def quantity_day_frac(val1, val2=None):
     except Exception:
         # Not a simple scaling, so cannot do the full-precision one.
         # But at least try normal conversion, since equivalencies may be set.
-        return val1.to_value(u.day), 0.
+        return val1.to_value(u.day), 0.0
 
-    if factor == 1.:
-        return day_frac(val1.value, 0.)
+    if factor == 1.0:
+        return day_frac(val1.value, 0.0)
 
     if factor > 1:
-        return day_frac(val1.value, 0., factor=factor)
+        return day_frac(val1.value, 0.0, factor=factor)
     else:
         divisor = u.day.to(val1.unit)
-        return day_frac(val1.value, 0., divisor=divisor)
+        return day_frac(val1.value, 0.0, divisor=divisor)
 
 
 def two_sum(a, b):
@@ -177,7 +178,7 @@ def split(a):
     http://www.cs.berkeley.edu/~jrs/papers/robustr.pdf
 
     """
-    c = 134217729. * a  # 2**27+1.
+    c = 134217729.0 * a  # 2**27+1.
     abig = c - a
     ah = c - abig
     al = a - ah
@@ -189,7 +190,7 @@ _enough_decimal_places = 34  # to represent two doubles
 
 def longdouble_to_twoval(val1, val2=None):
     if val2 is None:
-        val2 = val1.dtype.type(0.)
+        val2 = val1.dtype.type(0.0)
     else:
         best_type = np.result_type(val1.dtype, val2.dtype)
         val1 = val1.astype(best_type, copy=False)
@@ -225,7 +226,7 @@ def twoval_to_decimal1(val1, val2):
 
 
 def twoval_to_string1(val1, val2, fmt):
-    if val2 == 0.:
+    if val2 == 0.0:
         # For some formats, only a single float is really used.
         # For those, let numpy take care of correct number of digits.
         return str(val1)

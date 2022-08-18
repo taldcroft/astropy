@@ -8,10 +8,8 @@ from astropy.units.quantity_helper.function_helpers import ARRAY_FUNCTION_ENABLE
 
 
 class TestFunctionsTime:
-
     def setup_class(cls):
-        cls.t = Time(50000, np.arange(8).reshape(4, 2), format='mjd',
-                     scale='tai')
+        cls.t = Time(50000, np.arange(8).reshape(4, 2), format='mjd', scale='tai')
 
     def check(self, func, cls=None, scale=None, format=None, *args, **kwargs):
         if cls is None:
@@ -35,10 +33,8 @@ class TestFunctionsTime:
 
 
 class TestFunctionsTimeDelta(TestFunctionsTime):
-
     def setup_class(cls):
-        cls.t = TimeDelta(np.arange(8).reshape(4, 2), format='jd',
-                          scale='tai')
+        cls.t = TimeDelta(np.arange(8).reshape(4, 2), format='jd', scale='tai')
 
     @pytest.mark.parametrize('axis', (0, 1, None))
     @pytest.mark.parametrize('func', (np.sum, np.mean, np.median))
@@ -46,13 +42,18 @@ class TestFunctionsTimeDelta(TestFunctionsTime):
         self.check(func, axis=axis)
 
 
-@pytest.mark.xfail(not ARRAY_FUNCTION_ENABLED,
-                   reason="Needs __array_function__ support")
+@pytest.mark.xfail(
+    not ARRAY_FUNCTION_ENABLED, reason="Needs __array_function__ support"
+)
 @pytest.mark.parametrize('attribute', ['shape', 'ndim', 'size'])
-@pytest.mark.parametrize('t', [
-    Time('2001-02-03T04:05:06'),
-    Time(50000, np.arange(8).reshape(4, 2), format='mjd', scale='tai'),
-    TimeDelta(100, format='jd')])
+@pytest.mark.parametrize(
+    't',
+    [
+        Time('2001-02-03T04:05:06'),
+        Time(50000, np.arange(8).reshape(4, 2), format='mjd', scale='tai'),
+        TimeDelta(100, format='jd'),
+    ],
+)
 def test_shape_attribute_functions(t, attribute):
     # Regression test for
     # https://github.com/astropy/astropy/issues/8610#issuecomment-736855217

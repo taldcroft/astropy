@@ -13,8 +13,8 @@ from astropy.units.quantity_helper.function_helpers import ARRAY_FUNCTION_ENABLE
 
 
 needs_array_function = pytest.mark.xfail(
-    not ARRAY_FUNCTION_ENABLED,
-    reason="Needs __array_function__ support")
+    not ARRAY_FUNCTION_ENABLED, reason="Needs __array_function__ support"
+)
 
 
 def assert_time_all_equal(t1, t2):
@@ -26,25 +26,41 @@ def assert_time_all_equal(t1, t2):
 class ShapeSetup:
     def setup_class(cls):
         mjd = np.arange(50000, 50010)
-        frac = np.arange(0., 0.999, 0.2)
+        frac = np.arange(0.0, 0.999, 0.2)
         frac_masked = np.ma.array(frac)
         frac_masked[1] = np.ma.masked
 
         cls.t0 = {
             'not_masked': Time(mjd[:, np.newaxis] + frac, format='mjd', scale='utc'),
-            'masked': Time(mjd[:, np.newaxis] + frac_masked, format='mjd', scale='utc')
+            'masked': Time(mjd[:, np.newaxis] + frac_masked, format='mjd', scale='utc'),
         }
         cls.t1 = {
-            'not_masked': Time(mjd[:, np.newaxis] + frac, format='mjd', scale='utc',
-                               location=('45d', '50d')),
-            'masked': Time(mjd[:, np.newaxis] + frac_masked, format='mjd', scale='utc',
-                           location=('45d', '50d')),
+            'not_masked': Time(
+                mjd[:, np.newaxis] + frac,
+                format='mjd',
+                scale='utc',
+                location=('45d', '50d'),
+            ),
+            'masked': Time(
+                mjd[:, np.newaxis] + frac_masked,
+                format='mjd',
+                scale='utc',
+                location=('45d', '50d'),
+            ),
         }
         cls.t2 = {
-            'not_masked': Time(mjd[:, np.newaxis] + frac, format='mjd', scale='utc',
-                               location=(np.arange(len(frac)), np.arange(len(frac)))),
-            'masked': Time(mjd[:, np.newaxis] + frac_masked, format='mjd', scale='utc',
-                           location=(np.arange(len(frac_masked)), np.arange(len(frac_masked)))),
+            'not_masked': Time(
+                mjd[:, np.newaxis] + frac,
+                format='mjd',
+                scale='utc',
+                location=(np.arange(len(frac)), np.arange(len(frac))),
+            ),
+            'masked': Time(
+                mjd[:, np.newaxis] + frac_masked,
+                format='mjd',
+                scale='utc',
+                location=(np.arange(len(frac_masked)), np.arange(len(frac_masked))),
+            ),
         }
 
     def create_data(self, use_mask):
@@ -56,6 +72,7 @@ class ShapeSetup:
 @pytest.mark.parametrize('use_mask', ('masked', 'not_masked'))
 class TestManipulation(ShapeSetup):
     """Manipulation of Time objects, ensuring attributes are done correctly."""
+
     def test_ravel(self, use_mask):
         self.create_data(use_mask)
 
@@ -201,10 +218,10 @@ class TestManipulation(ShapeSetup):
         t2_reshape_t_reshape = t2_reshape_t.reshape(10, 5)
         assert t2_reshape_t_reshape.shape == (10, 5)
         assert not np.may_share_memory(t2_reshape_t_reshape.jd1, self.t2.jd1)
-        assert (t2_reshape_t_reshape.location.shape
-                == t2_reshape_t_reshape.shape)
-        assert not np.may_share_memory(t2_reshape_t_reshape.location,
-                                       t2_reshape_t.location)
+        assert t2_reshape_t_reshape.location.shape == t2_reshape_t_reshape.shape
+        assert not np.may_share_memory(
+            t2_reshape_t_reshape.location, t2_reshape_t.location
+        )
 
     def test_squeeze(self, use_mask):
         self.create_data(use_mask)
@@ -452,18 +469,19 @@ class TestShapeFunctions(ShapeSetup):
 @pytest.mark.parametrize('use_mask', ('masked', 'not_masked'))
 class TestArithmetic:
     """Arithmetic on Time objects, using both doubles."""
+
     kwargs = ({}, {'axis': None}, {'axis': 0}, {'axis': 1}, {'axis': 2})
     functions = ('min', 'max', 'sort')
 
     def setup_class(cls):
         mjd = np.arange(50000, 50100, 10).reshape(2, 5, 1)
-        frac = np.array([0.1, 0.1 + 1.e-15, 0.1 - 1.e-15, 0.9 + 2.e-16, 0.9])
+        frac = np.array([0.1, 0.1 + 1.0e-15, 0.1 - 1.0e-15, 0.9 + 2.0e-16, 0.9])
         frac_masked = np.ma.array(frac)
         frac_masked[1] = np.ma.masked
 
         cls.t0 = {
             'not_masked': Time(mjd, frac, format='mjd', scale='utc'),
-            'masked': Time(mjd, frac_masked, format='mjd', scale='utc')
+            'masked': Time(mjd, frac_masked, format='mjd', scale='utc'),
         }
 
         # Define arrays with same ordinal properties
@@ -475,10 +493,7 @@ class TestArithmetic:
             'not_masked': Time(mjd + frac, format='mjd', scale='utc'),
             'masked': Time(mjd + frac_masked, format='mjd', scale='utc'),
         }
-        cls.jd = {
-            'not_masked': mjd + frac,
-            'masked': mjd + frac_masked
-            }
+        cls.jd = {'not_masked': mjd + frac, 'masked': mjd + frac_masked}
 
     def create_data(self, use_mask):
         self.t0 = self.__class__.t0[use_mask]
@@ -614,8 +629,7 @@ class TestArithmetic:
         assert np.all(self.t0.sort(1) == self.t0)
         assert np.all(self.t0.sort(2) == self.t0[:, :, order])
         if use_mask == 'not_masked':
-            assert np.all(self.t0.sort(None)
-                          == self.t0[:, :, order].ravel())
+            assert np.all(self.t0.sort(None) == self.t0[:, :, order].ravel())
             # Bit superfluous, but good to check.
             assert np.all(self.t0.sort(-1)[:, :, 0] == self.t0.min(-1))
             assert np.all(self.t0.sort(-1)[:, :, -1] == self.t0.max(-1))

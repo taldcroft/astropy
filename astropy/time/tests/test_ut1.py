@@ -51,16 +51,27 @@ class TestTimeUT1Remote:
         iers_conf.auto_download = False
 
     def test_utc_to_ut1(self):
-        "Test conversion of UTC to UT1, making sure to include a leap second"""
-        t = Time(['2012-06-30 12:00:00', '2012-06-30 23:59:59',
-                  '2012-06-30 23:59:60', '2012-07-01 00:00:00',
-                  '2012-07-01 12:00:00'], scale='utc')
+        "Test conversion of UTC to UT1, making sure to include a leap second" ""
+        t = Time(
+            [
+                '2012-06-30 12:00:00',
+                '2012-06-30 23:59:59',
+                '2012-06-30 23:59:60',
+                '2012-07-01 00:00:00',
+                '2012-07-01 12:00:00',
+            ],
+            scale='utc',
+        )
         t_ut1_jd = t.ut1.jd
-        t_comp = np.array([2456108.9999932079,
-                           2456109.4999816339,
-                           2456109.4999932083,
-                           2456109.5000047823,
-                           2456110.0000047833])
+        t_comp = np.array(
+            [
+                2456108.9999932079,
+                2456109.4999816339,
+                2456109.4999932083,
+                2456109.5000047823,
+                2456110.0000047833,
+            ]
+        )
         assert allclose_jd(t_ut1_jd, t_comp)
         t_back = t.ut1.utc
         assert allclose_jd(t.jd, t_back.jd)
@@ -80,15 +91,26 @@ class TestTimeUT1:
         """Also test the reverse, around the leap second
         (round-trip test closes #2077)"""
         with iers_conf.set_temp('auto_download', False):
-            t = Time(['2012-06-30 12:00:00', '2012-06-30 23:59:59',
-                      '2012-07-01 00:00:00', '2012-07-01 00:00:01',
-                      '2012-07-01 12:00:00'], scale='ut1')
+            t = Time(
+                [
+                    '2012-06-30 12:00:00',
+                    '2012-06-30 23:59:59',
+                    '2012-07-01 00:00:00',
+                    '2012-07-01 00:00:01',
+                    '2012-07-01 12:00:00',
+                ],
+                scale='ut1',
+            )
             t_utc_jd = t.utc.jd
-            t_comp = np.array([2456109.0000010049,
-                               2456109.4999836441,
-                               2456109.4999952177,
-                               2456109.5000067917,
-                               2456109.9999952167])
+            t_comp = np.array(
+                [
+                    2456109.0000010049,
+                    2456109.4999836441,
+                    2456109.4999952177,
+                    2456109.5000067917,
+                    2456109.9999952167,
+                ]
+            )
             assert allclose_jd(t_utc_jd, t_comp)
             t_back = t.utc.ut1
             assert allclose_jd(t.jd, t_back.jd)
@@ -97,6 +119,7 @@ class TestTimeUT1:
         """Testing for a zero-length Time object from UTC to UT1
         when an empty array is passed"""
         from astropy import units as u
+
         with iers_conf.set_temp('auto_download', False):
             t = Time(['2012-06-30 12:00:00']) + np.arange(24) * u.hour
             t_empty = t[[]].ut1

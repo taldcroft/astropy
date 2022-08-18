@@ -11,8 +11,10 @@ class TestGuess:
     def test_guess1(self):
         times = ['1999-01-01 00:00:00.123456789', '2010-01-01 00:00:00']
         t = Time(times, scale='utc')
-        assert (repr(t) == "<Time object: scale='utc' format='iso' "
-                "value=['1999-01-01 00:00:00.123' '2010-01-01 00:00:00.000']>")
+        assert (
+            repr(t) == "<Time object: scale='utc' format='iso' "
+            "value=['1999-01-01 00:00:00.123' '2010-01-01 00:00:00.000']>"
+        )
 
     def test_guess2(self):
         times = ['1999-01-01 00:00:00.123456789', '2010-01 00:00:00']
@@ -22,8 +24,10 @@ class TestGuess:
     def test_guess3(self):
         times = ['1999:001:00:00:00.123456789', '2010:001']
         t = Time(times, scale='utc')
-        assert (repr(t) == "<Time object: scale='utc' format='yday' "
-                "value=['1999:001:00:00:00.123' '2010:001:00:00:00.000']>")
+        assert (
+            repr(t) == "<Time object: scale='utc' format='yday' "
+            "value=['1999:001:00:00:00.123' '2010:001:00:00:00.000']>"
+        )
 
     def test_guess4(self):
         times = [10, 20]

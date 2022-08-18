@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 from astropy import config as _config
 
+
 class Conf(_config.ConfigNamespace):  # noqa
     """
     Configuration parameters for `astropy.table`.
@@ -12,7 +13,9 @@ class Conf(_config.ConfigNamespace):  # noqa
         "ISOT, and YearDayTime. Allowed values are the 'False' (use Python parser),"
         "'True' (use C parser and fall through to Python parser if fails), and "
         "'force' (use C parser and raise exception if it fails). Note that the"
-        "options are all strings.")
+        "options are all strings.",
+    )
+
 
 conf = Conf()  # noqa
 
