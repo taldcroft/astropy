@@ -23,7 +23,7 @@ DEFAULT_EPS = np.sqrt(np.finfo(float).eps)
 # Default requested accuracy
 DEFAULT_ACC = 1e-07
 
-DEFAULT_BOUNDS = (-10 ** 12, 10 ** 12)
+DEFAULT_BOUNDS = (-(10**12), 10**12)
 
 
 class Optimization(metaclass=abc.ABCMeta):
@@ -87,7 +87,7 @@ class Optimization(metaclass=abc.ABCMeta):
 
     @property
     def opt_method(self):
-        """ Return the optimization method."""
+        """Return the optimization method."""
         return self._opt_method
 
     @abc.abstractmethod
@@ -107,16 +107,18 @@ class SLSQP(Optimization):
     ----------
     .. [1] http://www.netlib.org/toms/733
     """
+
     supported_constraints = ['bounds', 'eqcons', 'ineqcons', 'fixed', 'tied']
 
     def __init__(self):
         from scipy.optimize import fmin_slsqp
+
         super().__init__(fmin_slsqp)
         self.fit_info = {
             'final_func_val': None,
             'numiter': None,
             'exit_mode': None,
-            'message': None
+            'message': None,
         }
 
     def __call__(self, objfunc, initval, fargs, **kwargs):
@@ -159,9 +161,16 @@ class SLSQP(Optimization):
         eqcons = np.array(model.eqcons)
         ineqcons = np.array(model.ineqcons)
         fitparams, final_func_val, numiter, exit_mode, mess = self.opt_method(
-            objfunc, initval, args=fargs, full_output=True, disp=disp,
-            bounds=bounds, eqcons=eqcons, ieqcons=ineqcons,
-            **kwargs)
+            objfunc,
+            initval,
+            args=fargs,
+            full_output=True,
+            disp=disp,
+            bounds=bounds,
+            eqcons=eqcons,
+            ieqcons=ineqcons,
+            **kwargs,
+        )
 
         self.fit_info['final_func_val'] = final_func_val
         self.fit_info['numiter'] = numiter
@@ -169,9 +178,11 @@ class SLSQP(Optimization):
         self.fit_info['message'] = mess
 
         if exit_mode != 0:
-            warnings.warn("The fit may be unsuccessful; check "
-                          "fit_info['message'] for more information.",
-                          AstropyUserWarning)
+            warnings.warn(
+                "The fit may be unsuccessful; check "
+                "fit_info['message'] for more information.",
+                AstropyUserWarning,
+            )
 
         return fitparams, self.fit_info
 
@@ -193,12 +204,13 @@ class Simplex(Optimization):
 
     def __init__(self):
         from scipy.optimize import fmin as simplex
+
         super().__init__(simplex)
         self.fit_info = {
             'final_func_val': None,
             'numiter': None,
             'exit_mode': None,
-            'num_function_calls': None
+            'num_function_calls': None,
         }
 
     def __call__(self, objfunc, initval, fargs, **kwargs):
@@ -229,18 +241,27 @@ class Simplex(Optimization):
         disp = kwargs.pop('verblevel', None)
 
         fitparams, final_func_val, numiter, funcalls, exit_mode = self.opt_method(
-            objfunc, initval, args=fargs, xtol=self._acc, disp=disp,
-            full_output=True, **kwargs)
+            objfunc,
+            initval,
+            args=fargs,
+            xtol=self._acc,
+            disp=disp,
+            full_output=True,
+            **kwargs,
+        )
         self.fit_info['final_func_val'] = final_func_val
         self.fit_info['numiter'] = numiter
         self.fit_info['exit_mode'] = exit_mode
         self.fit_info['num_function_calls'] = funcalls
         if self.fit_info['exit_mode'] == 1:
-            warnings.warn("The fit may be unsuccessful; "
-                          "Maximum number of function evaluations reached.",
-                          AstropyUserWarning)
+            warnings.warn(
+                "The fit may be unsuccessful; "
+                "Maximum number of function evaluations reached.",
+                AstropyUserWarning,
+            )
         elif self.fit_info['exit_mode'] == 2:
-            warnings.warn("The fit may be unsuccessful; "
-                          "Maximum number of iterations reached.",
-                          AstropyUserWarning)
+            warnings.warn(
+                "The fit may be unsuccessful; " "Maximum number of iterations reached.",
+                AstropyUserWarning,
+            )
         return fitparams, self.fit_info

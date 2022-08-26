@@ -26,6 +26,7 @@ from .core import Model
 
 try:
     from scipy.interpolate import interpn
+
     has_scipy = True
 except ImportError:
     has_scipy = False
@@ -87,8 +88,15 @@ class _Tabular(Model):
 
     _id = 0
 
-    def __init__(self, points=None, lookup_table=None, method='linear',
-                 bounds_error=True, fill_value=np.nan, **kwargs):
+    def __init__(
+        self,
+        points=None,
+        lookup_table=None,
+        method='linear',
+        bounds_error=True,
+        fill_value=np.nan,
+        **kwargs,
+    ):
 
         n_models = kwargs.get('n_models', 1)
         if n_models > 1:
@@ -102,12 +110,13 @@ class _Tabular(Model):
             lookup_table = np.asarray(lookup_table)
 
         if self.lookup_table.ndim != lookup_table.ndim:
-            raise ValueError("lookup_table should be an array with "
-                             f"{self.lookup_table.ndim} dimensions.")
+            raise ValueError(
+                "lookup_table should be an array with "
+                f"{self.lookup_table.ndim} dimensions."
+            )
 
         if points is None:
-            points = tuple(np.arange(x, dtype=float)
-                           for x in lookup_table.shape)
+            points = tuple(np.arange(x, dtype=float) for x in lookup_table.shape)
         else:
             if lookup_table.ndim == 1 and not isinstance(points, tuple):
                 points = (points,)
@@ -115,15 +124,21 @@ class _Tabular(Model):
             if npts != lookup_table.ndim:
                 raise ValueError(
                     "Expected grid points in "
-                    f"{lookup_table.ndim} directions, got {npts}.")
-            if (npts > 1 and isinstance(points[0], u.Quantity) and
-                    len({getattr(p, 'unit', None) for p in points}) > 1):
+                    f"{lookup_table.ndim} directions, got {npts}."
+                )
+            if (
+                npts > 1
+                and isinstance(points[0], u.Quantity)
+                and len({getattr(p, 'unit', None) for p in points}) > 1
+            ):
                 raise ValueError('points must all have the same unit.')
 
         if isinstance(fill_value, u.Quantity):
             if not isinstance(lookup_table, u.Quantity):
-                raise ValueError(f"fill value is in {fill_value.unit} but expected to be "
-                                 "unitless.")
+                raise ValueError(
+                    f"fill value is in {fill_value.unit} but expected to be "
+                    "unitless."
+                )
             fill_value = fill_value.to(lookup_table.unit).value
 
         self.points = points
@@ -133,8 +148,10 @@ class _Tabular(Model):
         self.fill_value = fill_value
 
     def __repr__(self):
-        return (f"<{self.__class__.__name__}(points={self.points}, "
-                f"lookup_table={self.lookup_table})>")
+        return (
+            f"<{self.__class__.__name__}(points={self.points}, "
+            f"lookup_table={self.lookup_table})>"
+        )
 
     def __str__(self):
         default_keywords = [
@@ -147,12 +164,14 @@ class _Tabular(Model):
             ('  lookup_table', self.lookup_table),
             ('  method', self.method),
             ('  fill_value', self.fill_value),
-            ('  bounds_error', self.bounds_error)
+            ('  bounds_error', self.bounds_error),
         ]
 
-        parts = [f'{keyword}: {value}'
-                 for keyword, value in default_keywords
-                 if value is not None]
+        parts = [
+            f'{keyword}: {value}'
+            for keyword, value in default_keywords
+            if value is not None
+        ]
 
         return '\n'.join(parts)
 
@@ -222,13 +241,19 @@ class _Tabular(Model):
         inputs = np.array(inputs).T
         if not has_scipy:  # pragma: no cover
             raise ImportError("Tabular model requires scipy.")
-        result = interpn(self.points, self.lookup_table, inputs,
-                         method=self.method, bounds_error=self.bounds_error,
-                         fill_value=self.fill_value)
+        result = interpn(
+            self.points,
+            self.lookup_table,
+            inputs,
+            method=self.method,
+            bounds_error=self.bounds_error,
+            fill_value=self.fill_value,
+        )
 
         # return_units not respected when points has no units
-        if (isinstance(self.lookup_table, u.Quantity) and
-                not isinstance(self.points[0], u.Quantity)):
+        if isinstance(self.lookup_table, u.Quantity) and not isinstance(
+            self.points[0], u.Quantity
+        ):
             result = result * self.lookup_table.unit
 
         if self.n_outputs == 1:
@@ -254,10 +279,17 @@ class _Tabular(Model):
             else:
                 # equal-valued or double-valued lookup_table
                 raise NotImplementedError
-            return Tabular1D(points=points, lookup_table=lookup_table, method=self.method,
-                             bounds_error=self.bounds_error, fill_value=self.fill_value)
-        raise NotImplementedError("An analytical inverse transform "
-                                  "has not been implemented for this model.")
+            return Tabular1D(
+                points=points,
+                lookup_table=lookup_table,
+                method=self.method,
+                bounds_error=self.bounds_error,
+                fill_value=self.fill_value,
+            )
+        raise NotImplementedError(
+            "An analytical inverse transform "
+            "has not been implemented for this model."
+        )
 
 
 def tabular_model(dim, name=None):
@@ -354,7 +386,8 @@ _tab_docs = """
     Uses `scipy.interpolate.interpn`.
 """
 
-Tabular1D.__doc__ = """
+Tabular1D.__doc__ = (
+    """
     Tabular model in 1D.
     Returns an interpolated lookup table value.
 
@@ -364,9 +397,12 @@ Tabular1D.__doc__ = """
         The points defining the regular grid in n dimensions.
     lookup_table : array-like, of ndim=1.
         The data in one dimensions.
-""" + _tab_docs
+"""
+    + _tab_docs
+)
 
-Tabular2D.__doc__ = """
+Tabular2D.__doc__ = (
+    """
     Tabular model in 2D.
     Returns an interpolated lookup table value.
 
@@ -379,4 +415,6 @@ Tabular2D.__doc__ = """
         The data on a regular grid in 2 dimensions.
         Shape (m1, m2).
 
-""" + _tab_docs
+"""
+    + _tab_docs
+)

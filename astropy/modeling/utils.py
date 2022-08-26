@@ -4,6 +4,7 @@
 This module provides utility functions for the models package.
 """
 import warnings
+
 # pylint: disable=invalid-name
 from collections import UserDict
 from collections.abc import MutableMapping
@@ -179,8 +180,9 @@ def make_binary_operator_eval(oper, f, g):
     (30,)
     """
 
-    return (lambda inputs, params:
-            tuple(oper(x, y) for x, y in zip(f(inputs, params), g(inputs, params))))
+    return lambda inputs, params: tuple(
+        oper(x, y) for x, y in zip(f(inputs, params), g(inputs, params))
+    )
 
 
 def poly_map_domain(oldx, domain, window):
@@ -207,7 +209,7 @@ def poly_map_domain(oldx, domain, window):
 
 def _validate_domain_window(value):
     if value is not None:
-        if np.asanyarray(value).shape != (2, ):
+        if np.asanyarray(value).shape != (2,):
             raise ValueError('domain and window should be tuples of size 2.')
         return tuple(value)
     return value
@@ -372,14 +374,14 @@ def _combine_equivalency_dict(keys, eq1=None, eq2=None):
 
 
 def _to_radian(value):
-    """ Convert ``value`` to radian. """
+    """Convert ``value`` to radian."""
     if isinstance(value, u.Quantity):
         return value.to(u.rad)
     return np.deg2rad(value)
 
 
 def _to_orig_unit(value, raw_unit=None, orig_unit=None):
-    """ Convert value with ``raw_unit`` to ``orig_unit``. """
+    """Convert value with ``raw_unit`` to ``orig_unit``."""
     if raw_unit is not None:
         return (value * raw_unit).to(orig_unit)
     return np.rad2deg(value)
@@ -390,6 +392,7 @@ class _ConstraintsDict(UserDict):
     Wrapper around UserDict to allow updating the constraints
     on a Parameter when the dictionary is updated.
     """
+
     def __init__(self, model, constraint_type):
         self._model = model
         self.constraint_type = constraint_type
@@ -438,13 +441,15 @@ class _SpecialOperatorsDict(UserDict):
 
     def __setitem__(self, key, val):
         self._set_value(key, val)
-        warnings.warn(DeprecationWarning(
-            """
+        warnings.warn(
+            DeprecationWarning(
+                """
             Special operator dictionary assignment has been deprecated.
             Please use `.add` instead, so that you can capture a unique
             key for your operator.
             """
-        ))
+            )
+        )
 
     def _get_unique_id(self):
         self._unique_id += 1

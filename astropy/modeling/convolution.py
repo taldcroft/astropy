@@ -72,6 +72,7 @@ class Convolution(CompoundModel):
             data = super().__call__(*mesh, **kwargs)
 
             from scipy.interpolate import RegularGridInterpolator
+
             convolution = RegularGridInterpolator(domain, data)
 
             if self._cache_convolution:
