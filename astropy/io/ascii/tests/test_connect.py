@@ -7,8 +7,13 @@ from astropy.table.table_helpers import simple_table
 from astropy.utils.compat.optional_deps import HAS_BS4
 from astropy.utils.data import get_pkg_data_filename
 
-files = ['data/cds.dat', 'data/ipac.dat', 'data/daophot.dat', 'data/latex1.tex',
-         'data/simple_csv.csv']
+files = [
+    'data/cds.dat',
+    'data/ipac.dat',
+    'data/daophot.dat',
+    'data/latex1.tex',
+    'data/simple_csv.csv',
+]
 
 
 if HAS_BS4:

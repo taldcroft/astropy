@@ -52,9 +52,11 @@ def _check_multidim_table(table, max_ndim):
     # Check for N-d columns
     nd_names = [col.info.name for col in table.itercols() if len(col.shape) > max_ndim]
     if nd_names:
-        raise ValueError(f'column(s) with dimension > {max_ndim} '
-                         "cannot be be written with this format, try using 'ecsv' "
-                         "(Enhanced CSV) format")
+        raise ValueError(
+            f'column(s) with dimension > {max_ndim} '
+            "cannot be be written with this format, try using 'ecsv' "
+            "(Enhanced CSV) format"
+        )
 
 
 class CsvWriter:
@@ -76,6 +78,7 @@ class CsvWriter:
     >>> print(writer.writerow(['hello', '', 'world']))
     hello "" world
     """
+
     # Random 16-character string that gets injected instead of any
     # empty fields and is then replaced post-write with doubled-quotechar.
     # Created with:
@@ -91,7 +94,9 @@ class CsvWriter:
 
         dialect = self.writer.dialect
         self.quotechar2 = dialect.quotechar * 2
-        self.quote_empty = (dialect.quoting == csv.QUOTE_MINIMAL) and (dialect.delimiter == ' ')
+        self.quote_empty = (dialect.quoting == csv.QUOTE_MINIMAL) and (
+            dialect.delimiter == ' '
+        )
 
     def writerow(self, values):
         """
@@ -324,10 +329,10 @@ class BaseInputter:
             List of lines
         """
         try:
-            if (hasattr(table, 'read')
-                    or ('\n' not in table + '' and '\r' not in table + '')):
-                with get_readable_fileobj(table,
-                                          encoding=self.encoding) as fileobj:
+            if hasattr(table, 'read') or (
+                '\n' not in table + '' and '\r' not in table + ''
+            ):
+                with get_readable_fileobj(table, encoding=self.encoding) as fileobj:
                     table = fileobj.read()
             if newline is None:
                 lines = table.splitlines()
@@ -350,7 +355,8 @@ class BaseInputter:
 
             except TypeError:
                 raise TypeError(
-                    'Input "table" must be a string (filename or data) or an iterable')
+                    'Input "table" must be a string (filename or data) or an iterable'
+                )
 
         return self.process_lines(lines)
 
@@ -430,6 +436,7 @@ class DefaultSplitter(BaseSplitter):
                ...
 
     """
+
     delimiter = ' '
     """ one-character string used to separate fields. """
     quotechar = '"'
@@ -477,14 +484,15 @@ class DefaultSplitter(BaseSplitter):
 
         delimiter = ' ' if self.delimiter == r'\s' else self.delimiter
 
-        csv_reader = csv.reader(lines,
-                                delimiter=delimiter,
-                                doublequote=self.doublequote,
-                                escapechar=self.escapechar,
-                                quotechar=self.quotechar,
-                                quoting=self.quoting,
-                                skipinitialspace=self.skipinitialspace
-                                )
+        csv_reader = csv.reader(
+            lines,
+            delimiter=delimiter,
+            doublequote=self.doublequote,
+            escapechar=self.escapechar,
+            quotechar=self.quotechar,
+            quoting=self.quoting,
+            skipinitialspace=self.skipinitialspace,
+        )
         for vals in csv_reader:
             if self.process_val:
                 yield [self.process_val(x) for x in vals]
@@ -496,11 +504,13 @@ class DefaultSplitter(BaseSplitter):
         delimiter = ' ' if self.delimiter is None else str(self.delimiter)
 
         if self.csv_writer is None:
-            self.csv_writer = CsvWriter(delimiter=delimiter,
-                                        doublequote=self.doublequote,
-                                        escapechar=self.escapechar,
-                                        quotechar=self.quotechar,
-                                        quoting=self.quoting)
+            self.csv_writer = CsvWriter(
+                delimiter=delimiter,
+                doublequote=self.doublequote,
+                escapechar=self.escapechar,
+                quotechar=self.quotechar,
+                quoting=self.quoting,
+            )
         if self.process_val:
             vals = [self.process_val(x) for x in vals]
         out = self.csv_writer.writerow(vals).rstrip('\r\n')
@@ -559,6 +569,7 @@ class BaseHeader:
     """
     Base table header reader
     """
+
     auto_format = 'col{}'
     """ format string for auto-generating column names """
     start_line = None
@@ -589,8 +600,9 @@ class BaseHeader:
             comment_lines = [x for x in lines if re_comment.match(x)]
         else:
             comment_lines = []
-        comment_lines = [re.sub('^' + self.comment, '', x).strip()
-                         for x in comment_lines]
+        comment_lines = [
+            re.sub('^' + self.comment, '', x).strip() for x in comment_lines
+        ]
         if comment_lines:
             meta.setdefault('table', {})['comments'] = comment_lines
 
@@ -614,11 +626,11 @@ class BaseHeader:
             try:
                 first_data_vals = next(self.data.get_str_vals())
             except StopIteration:
-                raise InconsistentTableError('No data lines found so cannot autogenerate '
-                                             'column names')
+                raise InconsistentTableError(
+                    'No data lines found so cannot autogenerate ' 'column names'
+                )
             n_data_cols = len(first_data_vals)
-            self.names = [self.auto_format.format(i)
-                          for i in range(1, n_data_cols + 1)]
+            self.names = [self.auto_format.format(i) for i in range(1, n_data_cols + 1)]
 
         else:
             for i, line in enumerate(self.process_lines(lines)):
@@ -646,16 +658,18 @@ class BaseHeader:
 
     def write(self, lines):
         if self.start_line is not None:
-            for i, spacer_line in zip(range(self.start_line),
-                                      itertools.cycle(self.write_spacer_lines)):
+            for i, spacer_line in zip(
+                range(self.start_line), itertools.cycle(self.write_spacer_lines)
+            ):
                 lines.append(spacer_line)
             lines.append(self.splitter.join([x.info.name for x in self.cols]))
 
     @property
     def colnames(self):
         """Return the column names of the table"""
-        return tuple(col.name if isinstance(col, Column) else col.info.name
-                     for col in self.cols)
+        return tuple(
+            col.name if isinstance(col, Column) else col.info.name for col in self.cols
+        )
 
     def remove_columns(self, names):
         """
@@ -696,8 +710,9 @@ class BaseHeader:
         if isinstance(col, Column):
             col.name = new_name
         else:
-            raise TypeError(f'got column type {type(col)} instead of required '
-                            f'{Column}')
+            raise TypeError(
+                f'got column type {type(col)} instead of required ' f'{Column}'
+            )
 
     def get_type_map_key(self, col):
         return col.raw_type
@@ -707,8 +722,11 @@ class BaseHeader:
             type_map_key = self.get_type_map_key(col)
             return self.col_type_map[type_map_key.lower()]
         except KeyError:
-            raise ValueError('Unknown data type ""{}"" for column "{}"'.format(
-                col.raw_type, col.name))
+            raise ValueError(
+                'Unknown data type ""{}"" for column "{}"'.format(
+                    col.raw_type, col.name
+                )
+            )
 
     def check_column_names(self, names, strict_names, guessing):
         """
@@ -732,26 +750,40 @@ class BaseHeader:
             # Impose strict requirements on column names (normally used in guessing)
             bads = [" ", ",", "|", "\t", "'", '"']
             for name in self.colnames:
-                if (_is_number(name) or len(name) == 0
-                        or name[0] in bads or name[-1] in bads):
+                if (
+                    _is_number(name)
+                    or len(name) == 0
+                    or name[0] in bads
+                    or name[-1] in bads
+                ):
                     raise InconsistentTableError(
-                        f'Column name {name!r} does not meet strict name requirements')
+                        f'Column name {name!r} does not meet strict name requirements'
+                    )
         # When guessing require at least two columns, except for ECSV which can
         # reliably be guessed from the header requirements.
-        if guessing and len(self.colnames) <= 1 and self.__class__.__name__ != 'EcsvHeader':
-            raise ValueError('Table format guessing requires at least two columns, got {}'
-                             .format(list(self.colnames)))
+        if (
+            guessing
+            and len(self.colnames) <= 1
+            and self.__class__.__name__ != 'EcsvHeader'
+        ):
+            raise ValueError(
+                'Table format guessing requires at least two columns, got {}'.format(
+                    list(self.colnames)
+                )
+            )
 
         if names is not None and len(names) != len(self.colnames):
             raise InconsistentTableError(
                 'Length of names argument ({}) does not match number'
-                ' of table columns ({})'.format(len(names), len(self.colnames)))
+                ' of table columns ({})'.format(len(names), len(self.colnames))
+            )
 
 
 class BaseData:
     """
     Base table data reader.
     """
+
     start_line = None
     """ None, int, or a function of ``lines`` that returns None or int """
     end_line = None
@@ -798,8 +830,7 @@ class BaseData:
             return [x for x in nonblank_lines]
 
     def get_data_lines(self, lines):
-        """READ: Set ``data_lines`` attribute to lines slice comprising table data values.
-        """
+        """READ: Set ``data_lines`` attribute to lines slice comprising table data values."""
         data_lines = self.process_lines(lines)
         start_line = _get_line_index(self.start_line, data_lines)
         end_line = _get_line_index(self.end_line, data_lines)
@@ -858,15 +889,20 @@ class BaseData:
             # overwritten by earlier conditions
             for replacement in reversed(self.fill_values):
                 if len(replacement) < 2:
-                    raise ValueError("Format of fill_values must be "
-                                     "(<bad>, <fill>, <optional col1>, ...)")
+                    raise ValueError(
+                        "Format of fill_values must be "
+                        "(<bad>, <fill>, <optional col1>, ...)"
+                    )
                 elif len(replacement) == 2:
                     affect_cols = colnames
                 else:
                     affect_cols = replacement[2:]
 
-                for i, key in ((i, x) for i, x in enumerate(self.header.colnames)
-                               if x in affect_cols):
+                for i, key in (
+                    (i, x)
+                    for i, x in enumerate(self.header.colnames)
+                    if x in affect_cols
+                ):
                     cols[i].fill_values[replacement[0]] = str(replacement[1])
 
     def _set_masks(self, cols):
@@ -874,8 +910,9 @@ class BaseData:
         if self.fill_values:
             for col in (col for col in cols if col.fill_values):
                 col.mask = numpy.zeros(len(col.str_vals), dtype=bool)
-                for i, str_val in ((i, x) for i, x in enumerate(col.str_vals)
-                                   if x in col.fill_values):
+                for i, str_val in (
+                    (i, x) for i, x in enumerate(col.str_vals) if x in col.fill_values
+                ):
                     col.str_vals[i] = col.fill_values[str_val]
                     col.mask[i] = True
 
@@ -883,8 +920,9 @@ class BaseData:
         """WRITE: replace string values in col.str_vals"""
         if self.fill_values:
             for col in (col for col in cols if col.fill_values):
-                for i, str_val in ((i, x) for i, x in enumerate(col.str_vals)
-                                   if x in col.fill_values):
+                for i, str_val in (
+                    (i, x) for i, x in enumerate(col.str_vals) if x in col.fill_values
+                ):
                     col.str_vals[i] = col.fill_values[str_val]
                 if masked in col.fill_values and hasattr(col, 'mask'):
                     mask_val = col.fill_values[masked]
@@ -989,10 +1027,9 @@ def convert_numpy(numpy_type):
         # Try a smaller subset first for a long array
         if len(vals) > 10000:
             svals = numpy.asarray(vals[:1000])
-            if not numpy.all((svals == 'False')
-                             | (svals == 'True')
-                             | (svals == '0')
-                             | (svals == '1')):
+            if not numpy.all(
+                (svals == 'False') | (svals == 'True') | (svals == '0') | (svals == '1')
+            ):
                 raise ValueError('bool input strings must be False, True, 0, 1, or ""')
         vals = numpy.asarray(vals)
 
@@ -1015,6 +1052,7 @@ class BaseOutputter:
     """Output table as a dict of column objects keyed on column name.  The
     table data are stored as plain python lists within the column objects.
     """
+
     # User-defined converters which gets set in ascii.ui if a `converter` kwarg
     # is supplied.
     converters = {}
@@ -1051,8 +1089,10 @@ class BaseOutputter:
                     converters_out.append((converter_func, converter_type))
 
         except (ValueError, TypeError) as err:
-            raise ValueError('Error: invalid format for converters, see '
-                             f'documentation\n{converters}: {err}')
+            raise ValueError(
+                'Error: invalid format for converters, see '
+                f'documentation\n{converters}: {err}'
+            )
         return converters_out
 
     def _convert_vals(self, cols):
@@ -1094,11 +1134,15 @@ class BaseOutputter:
                     # With python/cpython#95778 this has been supplemented with a
                     # "ValueError: Exceeds the limit (4300) for integer string conversion"
                     # so need to catch that as well.
-                    if isinstance(err, OverflowError) or (isinstance(err, ValueError) and
-                                                          str(err).startswith('Exceeds the limit')):
+                    if isinstance(err, OverflowError) or (
+                        isinstance(err, ValueError)
+                        and str(err).startswith('Exceeds the limit')
+                    ):
                         warnings.warn(
                             f'OverflowError converting to {converter_type.__name__} in column '
-                            f'{col.name}, reverting to String.', AstropyWarning)
+                            f'{col.name}, reverting to String.',
+                            AstropyWarning,
+                        )
                         col.converters.insert(0, convert_numpy(numpy.str))
                     else:
                         col.converters.pop(0)
@@ -1132,18 +1176,19 @@ class TableOutputter(BaseOutputter):
     Output the table as an astropy.table.Table object.
     """
 
-    default_converters = [convert_numpy(int),
-                          convert_numpy(float),
-                          convert_numpy(str)]
+    default_converters = [convert_numpy(int), convert_numpy(float), convert_numpy(str)]
 
     def __call__(self, cols, meta):
         # Sets col.data to numpy array and col.type to io.ascii Type class (e.g.
         # FloatType) for each col.
         self._convert_vals(cols)
 
-        t_cols = [numpy.ma.MaskedArray(x.data, mask=x.mask)
-                  if hasattr(x, 'mask') and numpy.any(x.mask)
-                  else x.data for x in cols]
+        t_cols = [
+            numpy.ma.MaskedArray(x.data, mask=x.mask)
+            if hasattr(x, 'mask') and numpy.any(x.mask)
+            else x.data
+            for x in cols
+        ]
         out = Table(t_cols, names=[x.name for x in cols], meta=meta['table'])
 
         for col, out_col in zip(cols, out.columns.values()):
@@ -1179,16 +1224,26 @@ class MetaBaseReader(type):
         for io_format in io_formats:
             func = functools.partial(connect.io_read, io_format)
             header = f"ASCII reader '{io_format}' details\n"
-            func.__doc__ = (inspect.cleandoc(READ_DOCSTRING).strip() + '\n\n'
-                            + header + re.sub('.', '=', header) + '\n')
+            func.__doc__ = (
+                inspect.cleandoc(READ_DOCSTRING).strip()
+                + '\n\n'
+                + header
+                + re.sub('.', '=', header)
+                + '\n'
+            )
             func.__doc__ += inspect.cleandoc(cls.__doc__).strip()
             connect.io_registry.register_reader(io_format, Table, func)
 
             if dct.get('_io_registry_can_write', True):
                 func = functools.partial(connect.io_write, io_format)
                 header = f"ASCII writer '{io_format}' details\n"
-                func.__doc__ = (inspect.cleandoc(WRITE_DOCSTRING).strip() + '\n\n'
-                                + header + re.sub('.', '=', header) + '\n')
+                func.__doc__ = (
+                    inspect.cleandoc(WRITE_DOCSTRING).strip()
+                    + '\n\n'
+                    + header
+                    + re.sub('.', '=', header)
+                    + '\n'
+                )
                 func.__doc__ += inspect.cleandoc(cls.__doc__).strip()
                 connect.io_registry.register_writer(io_format, Table, func)
 
@@ -1219,6 +1274,7 @@ def _apply_include_exclude_names(table, names, include_names, exclude_names):
         List of names to exclude from output (applied after ``include_names``)
 
     """
+
     def rename_columns(table, names):
         # Rename table column names to those passed by user
         # Temporarily rename with names that are not in `names` or `table.colnames`.
@@ -1292,8 +1348,7 @@ class BaseReader(metaclass=MetaBaseReader):
         # Metadata, consisting of table-level meta and column-level meta.  The latter
         # could include information about column type, description, formatting, etc,
         # depending on the table meta format.
-        self.meta = OrderedDict(table=OrderedDict(),
-                                cols=OrderedDict())
+        self.meta = OrderedDict(table=OrderedDict(), cols=OrderedDict())
 
     def _check_multidim_table(self, table):
         """Check that the dimensions of columns in ``table`` are acceptable.
@@ -1384,12 +1439,14 @@ class BaseReader(metaclass=MetaBaseReader):
 
                 # otherwise, we raise an error only if it is still inconsistent
                 if len(str_vals) != n_cols:
-                    errmsg = ('Number of header columns ({}) inconsistent with'
-                              ' data columns ({}) at data line {}\n'
-                              'Header values: {}\n'
-                              'Data values: {}'.format(
-                                  n_cols, len(str_vals), i,
-                                  [x.name for x in cols], str_vals))
+                    errmsg = (
+                        'Number of header columns ({}) inconsistent with'
+                        ' data columns ({}) at data line {}\n'
+                        'Header values: {}\n'
+                        'Data values: {}'.format(
+                            n_cols, len(str_vals), i, [x.name for x in cols], str_vals
+                        )
+                    )
 
                     raise InconsistentTableError(errmsg)
 
@@ -1400,8 +1457,9 @@ class BaseReader(metaclass=MetaBaseReader):
         if hasattr(self.header, 'table_meta'):
             self.meta['table'].update(self.header.table_meta)
 
-        _apply_include_exclude_names(self.header, self.names,
-                                     self.include_names, self.exclude_names)
+        _apply_include_exclude_names(
+            self.header, self.names, self.include_names, self.exclude_names
+        )
 
         table = self.outputter(self.header.cols, self.meta)
         self.cols = self.header.cols
@@ -1440,7 +1498,9 @@ class BaseReader(metaclass=MetaBaseReader):
     def comment_lines(self):
         """Return lines in the table that match header.comment regexp"""
         if not hasattr(self, 'lines'):
-            raise ValueError('Table must be read prior to accessing the header comment lines')
+            raise ValueError(
+                'Table must be read prior to accessing the header comment lines'
+            )
         if self.header.comment:
             re_comment = re.compile(self.header.comment)
             comment_lines = [x for x in self.lines if re_comment.match(x)]
@@ -1495,7 +1555,9 @@ class BaseReader(metaclass=MetaBaseReader):
         # In-place update of columns in input ``table`` to reflect column
         # filtering.  Note that ``table`` is guaranteed to be a copy of the
         # original user-supplied table.
-        _apply_include_exclude_names(table, self.names, self.include_names, self.exclude_names)
+        _apply_include_exclude_names(
+            table, self.names, self.include_names, self.exclude_names
+        )
 
         # This is a hook to allow updating the table columns after name
         # filtering but before setting up to write the data.  This is currently
@@ -1564,8 +1626,9 @@ class WhitespaceSplitter(DefaultSplitter):
         in_quote = False
         lastchar = None
         for char in line:
-            if char == self.quotechar and (self.escapechar is None
-                                           or lastchar != self.escapechar):
+            if char == self.quotechar and (
+                self.escapechar is None or lastchar != self.escapechar
+            ):
                 in_quote = not in_quote
             if char == '\t' and not in_quote:
                 char = ' '
@@ -1575,12 +1638,28 @@ class WhitespaceSplitter(DefaultSplitter):
         return ''.join(newline)
 
 
-extra_reader_pars = ('Reader', 'Inputter', 'Outputter',
-                     'delimiter', 'comment', 'quotechar', 'header_start',
-                     'data_start', 'data_end', 'converters', 'encoding',
-                     'data_Splitter', 'header_Splitter',
-                     'names', 'include_names', 'exclude_names', 'strict_names',
-                     'fill_values', 'fill_include_names', 'fill_exclude_names')
+extra_reader_pars = (
+    'Reader',
+    'Inputter',
+    'Outputter',
+    'delimiter',
+    'comment',
+    'quotechar',
+    'header_start',
+    'data_start',
+    'data_end',
+    'converters',
+    'encoding',
+    'data_Splitter',
+    'header_Splitter',
+    'names',
+    'include_names',
+    'exclude_names',
+    'strict_names',
+    'fill_values',
+    'fill_include_names',
+    'fill_exclude_names',
+)
 
 
 def _get_reader(Reader, Inputter=None, Outputter=None, **kwargs):
@@ -1590,6 +1669,7 @@ def _get_reader(Reader, Inputter=None, Outputter=None, **kwargs):
     """
 
     from .fastbasic import FastBasic
+
     if issubclass(Reader, FastBasic):  # Fast readers handle args separately
         if Inputter is not None:
             kwargs['Inputter'] = Inputter
@@ -1599,9 +1679,12 @@ def _get_reader(Reader, Inputter=None, Outputter=None, **kwargs):
     # (e.g. by passing non-default options), raise an error for slow readers
     if 'fast_reader' in kwargs:
         if kwargs['fast_reader']['enable'] == 'force':
-            raise ParameterError('fast_reader required with '
-                                 '{}, but this is not a fast C reader: {}'
-                                 .format(kwargs['fast_reader'], Reader))
+            raise ParameterError(
+                'fast_reader required with '
+                '{}, but this is not a fast C reader: {}'.format(
+                    kwargs['fast_reader'], Reader
+                )
+            )
         else:
             del kwargs['fast_reader']  # Otherwise ignore fast_reader parameter
 
@@ -1640,14 +1723,20 @@ def _get_reader(Reader, Inputter=None, Outputter=None, **kwargs):
     if 'data_end' in kwargs:
         reader.data.end_line = kwargs['data_end']
     if 'header_start' in kwargs:
-        if (reader.header.start_line is not None):
+        if reader.header.start_line is not None:
             reader.header.start_line = kwargs['header_start']
             # For FixedWidthTwoLine the data_start is calculated relative to the position line.
             # However, position_line is given as absolute number and not relative to header_start.
             # So, ignore this Reader here.
-            if (('data_start' not in kwargs) and (default_header_length is not None)
-                    and reader._format_name not in ['fixed_width_two_line', 'commented_header']):
-                reader.data.start_line = reader.header.start_line + default_header_length
+            if (
+                ('data_start' not in kwargs)
+                and (default_header_length is not None)
+                and reader._format_name
+                not in ['fixed_width_two_line', 'commented_header']
+            ):
+                reader.data.start_line = (
+                    reader.header.start_line + default_header_length
+                )
         elif kwargs['header_start'] is not None:
             # User trying to set a None header start to some value other than None
             raise ValueError('header_start cannot be modified for this Reader')
@@ -1686,11 +1775,19 @@ def _get_reader(Reader, Inputter=None, Outputter=None, **kwargs):
     return reader
 
 
-extra_writer_pars = ('delimiter', 'comment', 'quotechar', 'formats',
-                     'strip_whitespace',
-                     'names', 'include_names', 'exclude_names',
-                     'fill_values', 'fill_include_names',
-                     'fill_exclude_names')
+extra_writer_pars = (
+    'delimiter',
+    'comment',
+    'quotechar',
+    'formats',
+    'strip_whitespace',
+    'names',
+    'include_names',
+    'exclude_names',
+    'fill_values',
+    'fill_include_names',
+    'fill_exclude_names',
+)
 
 
 def _get_writer(Writer, fast_writer, **kwargs):

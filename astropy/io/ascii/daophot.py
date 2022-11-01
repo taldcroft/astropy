@@ -28,10 +28,9 @@ class DaophotHeader(core.BaseHeader):
 
     # Regex for extracting the format strings
     re_format = re.compile(r'%-?(\d+)\.?\d?[sdfg]')
-    re_header_keyword = re.compile(r'[#]K'
-                                   r'\s+ (?P<name> \w+)'
-                                   r'\s* = (?P<stuff> .+) $',
-                                   re.VERBOSE)
+    re_header_keyword = re.compile(
+        r'[#]K' r'\s+ (?P<name> \w+)' r'\s* = (?P<stuff> .+) $', re.VERBOSE
+    )
     aperture_values = ()
 
     def __init__(self):
@@ -60,12 +59,14 @@ class DaophotHeader(core.BaseHeader):
         if self.data.is_multiline:
             # Database contains multi-aperture data.
             # Autogen column names, units, formats from last row of column headers
-            last_names, last_units, last_formats = list(zip(*map(coldef_dict.get, line_ids)))[-1]
+            last_names, last_units, last_formats = list(
+                zip(*map(coldef_dict.get, line_ids))
+            )[-1]
             N_multiline = len(self.data.first_block)
             for i in np.arange(1, N_multiline + 1).astype('U2'):
                 # extra column names eg. RAPERT2, SUM2 etc...
                 extended_names = list(map(''.join, zip(last_names, itt.repeat(i))))
-                if i == '1':      # Enumerate the names starting at 1
+                if i == '1':  # Enumerate the names starting at 1
                     coldef_dict['#N'][-1] = extended_names
                 else:
                     coldef_dict['#N'].append(extended_names)
@@ -74,8 +75,9 @@ class DaophotHeader(core.BaseHeader):
 
         # Get column widths from column format specifiers
         get_col_width = lambda s: int(self.re_format.search(s).groups()[0])
-        col_widths = [[get_col_width(f) for f in formats]
-                      for formats in coldef_dict['#F']]
+        col_widths = [
+            [get_col_width(f) for f in formats] for formats in coldef_dict['#F']
+        ]
         # original data format might be shorter than 80 characters and filled with spaces
         row_widths = np.fromiter(map(sum, col_widths), int)
         row_short = Daophot.table_width - row_widths
@@ -117,15 +119,16 @@ class DaophotHeader(core.BaseHeader):
 
             # Update the table_meta keywords if necessary
             if '#K' in grouped_lines_dict:
-                keywords = OrderedDict(map(self.extract_keyword_line, grouped_lines_dict['#K']))
+                keywords = OrderedDict(
+                    map(self.extract_keyword_line, grouped_lines_dict['#K'])
+                )
                 table_meta['keywords'] = keywords
 
             coldef_dict = self.parse_col_defs(grouped_lines_dict)
 
             line_ids = ('#N', '#U', '#F')
             for name, unit, fmt in zip(*map(coldef_dict.get, line_ids)):
-                meta['cols'][name] = {'unit': unit,
-                                      'format': fmt}
+                meta['cols'][name] = {'unit': unit, 'format': fmt}
 
             self.meta = meta
             self.names = coldef_dict['#N']
@@ -137,9 +140,11 @@ class DaophotHeader(core.BaseHeader):
         m = self.re_header_keyword.match(line)
         if m:
             vals = m.group('stuff').strip().rsplit(None, 2)
-            keyword_dict = {'units': vals[-2],
-                            'format': vals[-1],
-                            'value': (vals[0] if len(vals) > 2 else "")}
+            keyword_dict = {
+                'units': vals[-2],
+                'format': vals[-1],
+                'value': (vals[0] if len(vals) > 2 else ""),
+            }
             return m.group('name'), keyword_dict
 
     def get_cols(self, lines):
@@ -236,8 +241,9 @@ class DaophotInputter(core.ContinuationLinesInputter):
         # this case we have to figure out how many apertures there are based on
         # the file structure.
 
-        comment, special, cont = zip(*(self.re_multiline.search(line).groups()
-                                       for line in lines[:depth]))
+        comment, special, cont = zip(
+            *(self.re_multiline.search(line).groups() for line in lines[:depth])
+        )
 
         # Find first non-comment line
         data_start = first_false_index(comment)
@@ -257,7 +263,7 @@ class DaophotInputter(core.ContinuationLinesInputter):
             return None, None, header_lines
 
         # last line ending on special '*', but not on line continue '/'
-        last_special = first_false_index(special[data_start + first_special:depth])
+        last_special = first_false_index(special[data_start + first_special : depth])
         # index relative to first_special
 
         # if first_special is None: #no end of special lines within search
@@ -267,7 +273,7 @@ class DaophotInputter(core.ContinuationLinesInputter):
         # indexing now relative to line[0]
         markers = np.cumsum([data_start, first_special, last_special])
         # multiline portion of first data block
-        multiline_block = lines[markers[1]:markers[-1]]
+        multiline_block = lines[markers[1] : markers[-1]]
 
         return markers, multiline_block, header_lines
 
@@ -281,7 +287,7 @@ class DaophotInputter(core.ContinuationLinesInputter):
         self.data.header.lines = header
 
         if markers is not None:
-            lines = lines[markers[0]:]
+            lines = lines[markers[0] :]
 
         continuation_char = self.continuation_char
         multiline_char = self.multiline_char
@@ -304,8 +310,9 @@ class DaophotInputter(core.ContinuationLinesInputter):
                     outlines.append(''.join(parts))
                     parts = []
             else:
-                raise core.InconsistentTableError('multiline re could not match line '
-                                                  '{}: {}'.format(i, line))
+                raise core.InconsistentTableError(
+                    'multiline re could not match line ' '{}: {}'.format(i, line)
+                )
 
         return outlines
 
@@ -372,6 +379,7 @@ class Daophot(core.BaseReader):
     and so on.
 
     """
+
     _format_name = 'daophot'
     _io_registry_format_aliases = ['daophot']
     _io_registry_can_write = False

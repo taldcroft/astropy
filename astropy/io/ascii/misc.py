@@ -18,7 +18,9 @@ def first_true_index(iterable, pred=None, default=None):
         func = operator.itemgetter(1)
     else:
         func = lambda x: pred(x[1])
-    ii = next(filter(func, enumerate(iterable)), default)  # either index-item pair or default
+    ii = next(
+        filter(func, enumerate(iterable)), default
+    )  # either index-item pair or default
     return ii[0] if ii else default
 
 
@@ -91,7 +93,9 @@ def sortmore(*args, **kw):
             # if global sort function given and no local (secondary) key given, ==> no tiebreakers
             key = lambda x: 0
         else:
-            key = lambda x: x  # if no global sort and no local sort keys given, sort by item values
+            key = (
+                lambda x: x
+            )  # if no global sort and no local sort keys given, sort by item values
     if globalkey is None:
         globalkey = lambda *x: 0
 
@@ -105,8 +109,10 @@ def sortmore(*args, **kw):
         k = lambda x: (globalkey(*x),) + tuple(f(z) for (f, z) in zip(key, x))
     else:
         raise KeyError(
-            "kw arg 'key' should be None, callable, or a sequence of callables, not {}"
-            .format(type(key)))
+            "kw arg 'key' should be None, callable, or a sequence of callables, not {}".format(
+                type(key)
+            )
+        )
 
     res = sorted(list(zip(*args)), key=k)
     if 'order' in kw:

@@ -22,6 +22,7 @@ class BasicHeader(core.BaseHeader):
     Set a few defaults for common ascii table formats
     (start at line 0, comments begin with ``#`` and possibly white space)
     """
+
     start_line = 0
     comment = r'\s*#'
     write_comment = '# '
@@ -34,6 +35,7 @@ class BasicData(core.BaseData):
     Set a few defaults for common ascii table formats
     (start at line 1, comments begin with ``#`` and possibly white space)
     """
+
     start_line = 1
     comment = r'\s*#'
     write_comment = '# '
@@ -70,6 +72,7 @@ class NoHeaderHeader(BasicHeader):
     Set the start of header line number to `None`, which tells the basic
     reader there is no header line.
     """
+
     start_line = None
 
 
@@ -79,6 +82,7 @@ class NoHeaderData(BasicData):
 
     Data starts at first uncommented line since there is no header line.
     """
+
     start_line = 0
 
 
@@ -94,6 +98,7 @@ class NoHeader(Basic):
       3 4 world
 
     """
+
     _format_name = 'no_header'
     _description = 'Basic table with no headers'
     header_class = NoHeaderHeader
@@ -115,7 +120,7 @@ class CommentedHeaderHeader(BasicHeader):
         for line in lines:
             match = re_comment.match(line)
             if match:
-                yield line[match.end():]
+                yield line[match.end() :]
 
     def write(self, lines):
         lines.append(self.write_comment + self.splitter.join(self.colnames))
@@ -140,6 +145,7 @@ class CommentedHeader(Basic):
       4 5 6
 
     """
+
     _format_name = 'commented_header'
     _description = 'Column names in a commented line'
 
@@ -159,7 +165,9 @@ class CommentedHeader(Basic):
             idx = self.header.start_line
             if idx < 0:
                 idx = len(out.meta['comments']) + idx
-            out.meta['comments'] = out.meta['comments'][:idx] + out.meta['comments'][idx + 1:]
+            out.meta['comments'] = (
+                out.meta['comments'][:idx] + out.meta['comments'][idx + 1 :]
+            )
             if not out.meta['comments']:
                 del out.meta['comments']
 
@@ -175,6 +183,7 @@ class CommentedHeader(Basic):
 
 class TabHeaderSplitter(core.DefaultSplitter):
     """Split lines on tab and do not remove whitespace"""
+
     delimiter = '\t'
 
     def process_line(self, line):
@@ -185,6 +194,7 @@ class TabDataSplitter(TabHeaderSplitter):
     """
     Don't strip data value whitespace since that is significant in TSV tables
     """
+
     process_val = None
     skipinitialspace = False
 
@@ -193,6 +203,7 @@ class TabHeader(BasicHeader):
     """
     Reader for header of tables with tab separated header
     """
+
     splitter_class = TabHeaderSplitter
 
 
@@ -200,6 +211,7 @@ class TabData(BasicData):
     """
     Reader for data of tables with tab separated data
     """
+
     splitter_class = TabDataSplitter
 
 
@@ -216,6 +228,7 @@ class Tab(Basic):
       1 <tab> 2 <tab> 5
 
     """
+
     _format_name = 'tab'
     _description = 'Basic table with tab-separated values'
     header_class = TabHeader
@@ -226,6 +239,7 @@ class CsvSplitter(core.DefaultSplitter):
     """
     Split on comma for CSV (comma-separated-value) tables
     """
+
     delimiter = ','
 
 
@@ -233,6 +247,7 @@ class CsvHeader(BasicHeader):
     """
     Header that uses the :class:`astropy.io.ascii.basic.CsvSplitter`
     """
+
     splitter_class = CsvSplitter
     comment = None
     write_comment = None
@@ -242,6 +257,7 @@ class CsvData(BasicData):
     """
     Data that uses the :class:`astropy.io.ascii.basic.CsvSplitter`
     """
+
     splitter_class = CsvSplitter
     fill_values = [(core.masked, '')]
     comment = None
@@ -273,6 +289,7 @@ class Csv(Basic):
       2,38.12321,-88.1321,2.2,17.0
 
     """
+
     _format_name = 'csv'
     _io_registry_format_aliases = ['csv']
     _io_registry_can_write = True
@@ -312,8 +329,8 @@ class RdbHeader(TabHeader):
     """
     Header for RDB tables
     """
-    col_type_map = {'n': core.NumType,
-                    's': core.StrType}
+
+    col_type_map = {'n': core.NumType, 's': core.StrType}
 
     def get_type_map_key(self, col):
         return col.raw_type[-1]
@@ -337,7 +354,7 @@ class RdbHeader(TabHeader):
         None
 
         """
-        header_lines = self.process_lines(lines)   # this is a generator
+        header_lines = self.process_lines(lines)  # this is a generator
         header_vals_list = [hl for _, hl in zip(range(2), self.splitter(header_lines))]
         if len(header_vals_list) != 2:
             raise ValueError('RDB header requires 2 lines')
@@ -345,11 +362,13 @@ class RdbHeader(TabHeader):
 
         if len(self.names) != len(raw_types):
             raise core.InconsistentTableError(
-                'RDB header mismatch between number of column names and column types.')
+                'RDB header mismatch between number of column names and column types.'
+            )
 
         if any(not re.match(r'\d*(N|S)$', x, re.IGNORECASE) for x in raw_types):
             raise core.InconsistentTableError(
-                f'RDB types definitions do not all match [num](N|S): {raw_types}')
+                f'RDB types definitions do not all match [num](N|S): {raw_types}'
+            )
 
         self._set_cols_from_names()
         for col, raw_type in zip(self.cols, raw_types):
@@ -371,6 +390,7 @@ class RdbData(TabData):
     """
     Data reader for RDB data. Starts reading at line 2.
     """
+
     start_line = 2
 
 
@@ -387,6 +407,7 @@ class Rdb(Tab):
       1 <tab> 2 <tab> 5
 
     """
+
     _format_name = 'rdb'
     _io_registry_format_aliases = ['rdb']
     _io_registry_suffix = '.rdb'

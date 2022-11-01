@@ -9,8 +9,9 @@ from astropy.utils.compat.optional_deps import HAS_BZ2, HAS_LZMA
 from astropy.utils.data import get_pkg_data_filename
 
 
-@pytest.mark.parametrize('filename', ['data/daophot.dat.gz', 'data/latex1.tex.gz',
-                                      'data/short.rdb.gz'])
+@pytest.mark.parametrize(
+    'filename', ['data/daophot.dat.gz', 'data/latex1.tex.gz', 'data/short.rdb.gz']
+)
 def test_gzip(filename):
     t_comp = read(get_pkg_data_filename(filename))
     t_uncomp = read(get_pkg_data_filename(filename.replace('.gz', '')))

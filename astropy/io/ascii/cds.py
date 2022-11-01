@@ -25,10 +25,12 @@ __doctest_skip__ = ['*']
 class CdsHeader(core.BaseHeader):
     _subfmt = 'CDS'
 
-    col_type_map = {'e': core.FloatType,
-                    'f': core.FloatType,
-                    'i': core.IntType,
-                    'a': core.StrType}
+    col_type_map = {
+        'e': core.FloatType,
+        'f': core.FloatType,
+        'i': core.IntType,
+        'a': core.StrType,
+    }
 
     'The ReadMe file to construct header from.'
     readme = None
@@ -36,8 +38,11 @@ class CdsHeader(core.BaseHeader):
     def get_type_map_key(self, col):
         match = re.match(r'\d*(\S)', col.raw_type.lower())
         if not match:
-            raise ValueError('Unrecognized {} format "{}" for column "{}"'.format(
-                self._subfmt, col.raw_type, col.name))
+            raise ValueError(
+                'Unrecognized {} format "{}" for column "{}"'.format(
+                    self._subfmt, col.raw_type, col.name
+                )
+            )
         return match.group(1)
 
     def get_cols(self, lines):
@@ -70,12 +75,14 @@ class CdsHeader(core.BaseHeader):
                         if comment_lines == 3:
                             break
                 else:
-                    match = re.match(r'Byte-by-byte Description of file: (?P<name>.+)$',
-                                     line, re.IGNORECASE)
+                    match = re.match(
+                        r'Byte-by-byte Description of file: (?P<name>.+)$',
+                        line,
+                        re.IGNORECASE,
+                    )
                     if match:
                         # Split 'name' in case in contains multiple files
-                        names = [s for s in re.split('[, ]+', match.group('name'))
-                                 if s]
+                        names = [s for s in re.split('[, ]+', match.group('name')) if s]
                         # Iterate on names to find if one matches the tablename
                         # including wildcards.
                         for pattern in names:
@@ -85,8 +92,11 @@ class CdsHeader(core.BaseHeader):
                                 break
 
             else:
-                raise core.InconsistentTableError("Can't find table {} in {}".format(
-                    self.data.table_name, self.readme))
+                raise core.InconsistentTableError(
+                    "Can't find table {} in {}".format(
+                        self.data.table_name, self.readme
+                    )
+                )
 
         found_line = False
 
@@ -99,14 +109,16 @@ class CdsHeader(core.BaseHeader):
         else:
             raise ValueError('no line with "Byte-by-byte Description" found')
 
-        re_col_def = re.compile(r"""\s*
+        re_col_def = re.compile(
+            r"""\s*
                                     (?P<start> \d+ \s* -)? \s*
                                     (?P<end>   \d+)        \s+
                                     (?P<format> [\w.]+)     \s+
                                     (?P<units> \S+)        \s+
                                     (?P<name>  \S+)
                                     (\s+ (?P<descr> \S.*))?""",
-                                re.VERBOSE)
+            re.VERBOSE,
+        )
 
         cols = []
         for line in itertools.islice(lines, i_col_def + 4, None):
@@ -115,8 +127,12 @@ class CdsHeader(core.BaseHeader):
             match = re_col_def.match(line)
             if match:
                 col = core.Column(name=match.group('name'))
-                col.start = int(re.sub(r'[-\s]', '',
-                                       match.group('start') or match.group('end'))) - 1
+                col.start = (
+                    int(
+                        re.sub(r'[-\s]', '', match.group('start') or match.group('end'))
+                    )
+                    - 1
+                )
                 col.end = int(match.group('end'))
                 unit = match.group('units')
                 if unit == '---':
@@ -129,16 +145,18 @@ class CdsHeader(core.BaseHeader):
 
                 match = re.match(
                     r'(?P<limits>[\[\]] \S* [\[\]])?'  # Matches limits specifier (eg [])
-                                                       # that may or may not be present
+                    # that may or may not be present
                     r'\?'  # Matches '?' directly
                     r'((?P<equal>=)(?P<nullval> \S*))?'  # Matches to nullval if and only
-                                                         # if '=' is present
+                    # if '=' is present
                     r'(?P<order>[-+]?[=]?)'  # Matches to order specifier:
-                                             # ('+', '-', '+=', '-=')
+                    # ('+', '-', '+=', '-=')
                     r'(\s* (?P<descriptiontext> \S.*))?',  # Matches description text even
-                                                           # even if no whitespace is
-                                                           # present after '?'
-                    col.description, re.VERBOSE)
+                    # even if no whitespace is
+                    # present after '?'
+                    col.description,
+                    re.VERBOSE,
+                )
                 if match:
                     col.description = (match.group('descriptiontext') or '').strip()
                     if issubclass(col.type, core.FloatType):
@@ -154,7 +172,7 @@ class CdsHeader(core.BaseHeader):
                             self.data.fill_values.append(('-' * i, fillval, col.name))
                     else:
                         col.null = match.group('nullval')
-                        if (col.null is None):
+                        if col.null is None:
                             col.null = ''
                         self.data.fill_values.append((col.null, fillval, col.name))
 
@@ -171,8 +189,8 @@ class CdsHeader(core.BaseHeader):
 
 
 class CdsData(core.BaseData):
-    """CDS table data reader
-    """
+    """CDS table data reader"""
+
     _subfmt = 'CDS'
     splitter_class = fixedwidth.FixedWidthSplitter
 
@@ -184,11 +202,14 @@ class CdsData(core.BaseData):
         # attribute.
         if self.header.readme and self.table_name:
             return lines
-        i_sections = [i for i, x in enumerate(lines)
-                      if x.startswith(('------', '======='))]
+        i_sections = [
+            i for i, x in enumerate(lines) if x.startswith(('------', '======='))
+        ]
         if not i_sections:
-            raise core.InconsistentTableError(f'No {self._subfmt} section delimiter found')
-        return lines[i_sections[-1]+1:]
+            raise core.InconsistentTableError(
+                f'No {self._subfmt} section delimiter found'
+            )
+        return lines[i_sections[-1] + 1 :]
 
 
 class Cds(core.BaseReader):
@@ -296,6 +317,7 @@ class Cds(core.BaseReader):
       ``description`` attributes, respectively.
     * The other metadata defined by this format is not available in the output table.
     """
+
     _format_name = 'cds'
     _io_registry_format_aliases = ['cds']
     _io_registry_can_write = False

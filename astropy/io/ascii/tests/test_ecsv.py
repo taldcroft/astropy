@@ -26,9 +26,22 @@ from astropy.units import allclose as quantity_allclose
 
 from .common import TEST_DIR
 
-DTYPES = ['bool', 'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32',
-          'uint64', 'float16', 'float32', 'float64', 'float128',
-          'str']
+DTYPES = [
+    'bool',
+    'int8',
+    'int16',
+    'int32',
+    'int64',
+    'uint8',
+    'uint16',
+    'uint32',
+    'uint64',
+    'float16',
+    'float32',
+    'float64',
+    'float128',
+    'str',
+]
 if not hasattr(np, 'float128') or os.name == 'nt' or sys.maxsize <= 2**32:
     DTYPES.remove('float128')
 
@@ -41,24 +54,27 @@ for dtype in DTYPES:
         data = np.array(['ab 0', 'ab, 1', 'ab2'])
     else:
         data = np.arange(3, dtype=dtype)
-    c = Column(data, unit='m / s', description='descr_' + dtype,
-               meta={'meta ' + dtype: 1})
+    c = Column(
+        data, unit='m / s', description='descr_' + dtype, meta={'meta ' + dtype: 1}
+    )
     T_DTYPES[dtype] = c
 
 T_DTYPES.meta['comments'] = ['comment1', 'comment2']
 
 # Corresponds to simple_table()
-SIMPLE_LINES = ['# %ECSV 1.0',
-                '# ---',
-                '# datatype:',
-                '# - {name: a, datatype: int64}',
-                '# - {name: b, datatype: float64}',
-                '# - {name: c, datatype: string}',
-                '# schema: astropy-2.0',
-                'a b c',
-                '1 1.0 c',
-                '2 2.0 d',
-                '3 3.0 e']
+SIMPLE_LINES = [
+    '# %ECSV 1.0',
+    '# ---',
+    '# datatype:',
+    '# - {name: a, datatype: int64}',
+    '# - {name: b, datatype: float64}',
+    '# - {name: c, datatype: string}',
+    '# schema: astropy-2.0',
+    'a b c',
+    '1 1.0 c',
+    '2 2.0 d',
+    '3 3.0 e',
+]
 
 
 def test_write_simple():
@@ -78,36 +94,38 @@ def test_write_full():
     Write a full-featured table with common types and explicitly checkout output
     """
     t = T_DTYPES['bool', 'int64', 'float64', 'str']
-    lines = ['# %ECSV 1.0',
-             '# ---',
-             '# datatype:',
-             '# - name: bool',
-             '#   unit: m / s',
-             '#   datatype: bool',
-             '#   description: descr_bool',
-             '#   meta: {meta bool: 1}',
-             '# - name: int64',
-             '#   unit: m / s',
-             '#   datatype: int64',
-             '#   description: descr_int64',
-             '#   meta: {meta int64: 1}',
-             '# - name: float64',
-             '#   unit: m / s',
-             '#   datatype: float64',
-             '#   description: descr_float64',
-             '#   meta: {meta float64: 1}',
-             '# - name: str',
-             '#   unit: m / s',
-             '#   datatype: string',
-             '#   description: descr_str',
-             '#   meta: {meta str: 1}',
-             '# meta: !!omap',
-             '# - comments: [comment1, comment2]',
-             '# schema: astropy-2.0',
-             'bool int64 float64 str',
-             'False 0 0.0 "ab 0"',
-             'True 1 1.0 "ab, 1"',
-             'False 2 2.0 ab2']
+    lines = [
+        '# %ECSV 1.0',
+        '# ---',
+        '# datatype:',
+        '# - name: bool',
+        '#   unit: m / s',
+        '#   datatype: bool',
+        '#   description: descr_bool',
+        '#   meta: {meta bool: 1}',
+        '# - name: int64',
+        '#   unit: m / s',
+        '#   datatype: int64',
+        '#   description: descr_int64',
+        '#   meta: {meta int64: 1}',
+        '# - name: float64',
+        '#   unit: m / s',
+        '#   datatype: float64',
+        '#   description: descr_float64',
+        '#   meta: {meta float64: 1}',
+        '# - name: str',
+        '#   unit: m / s',
+        '#   datatype: string',
+        '#   description: descr_str',
+        '#   meta: {meta str: 1}',
+        '# meta: !!omap',
+        '# - comments: [comment1, comment2]',
+        '# schema: astropy-2.0',
+        'bool int64 float64 str',
+        'False 0 0.0 "ab 0"',
+        'True 1 1.0 "ab, 1"',
+        'False 2 2.0 ab2',
+    ]
 
     out = StringIO()
     t.write(out, format='ascii.ecsv')
@@ -124,11 +142,13 @@ def test_write_read_roundtrip():
         out = StringIO()
         t.write(out, format='ascii.ecsv', delimiter=delimiter)
 
-        t2s = [Table.read(out.getvalue(), format='ascii.ecsv'),
-               Table.read(out.getvalue(), format='ascii'),
-               ascii.read(out.getvalue()),
-               ascii.read(out.getvalue(), format='ecsv', guess=False),
-               ascii.read(out.getvalue(), format='ecsv')]
+        t2s = [
+            Table.read(out.getvalue(), format='ascii.ecsv'),
+            Table.read(out.getvalue(), format='ascii'),
+            ascii.read(out.getvalue()),
+            ascii.read(out.getvalue(), format='ecsv', guess=False),
+            ascii.read(out.getvalue(), format='ecsv'),
+        ]
         for t2 in t2s:
             assert t.meta == t2.meta
             for name in t.colnames:
@@ -196,18 +216,19 @@ def test_structured_input():
     """
     t = Table()
     # Add unit, description and meta to make sure that round-trips as well.
-    t['a'] = Column([('B', (1., [2., 3.])),
-                     ('A', (9., [8., 7.]))],
-                    dtype=[('s', 'U1'), ('v', [('p0', 'f8'), ('p1', '2f8')])],
-                    description='description',
-                    format='>',  # Most formats do not work with structured!
-                    unit='m',  # Overall unit should round-trip.
-                    meta={1: 2})
-    t['b'] = Column([[(1., 2.), (9., 8.)],
-                     [(3., 4.), (7., 6.)]],
-                    dtype='f8,f8',
-                    unit=u.Unit('m,s')  # Per part unit should round-trip too.
-                    )
+    t['a'] = Column(
+        [('B', (1.0, [2.0, 3.0])), ('A', (9.0, [8.0, 7.0]))],
+        dtype=[('s', 'U1'), ('v', [('p0', 'f8'), ('p1', '2f8')])],
+        description='description',
+        format='>',  # Most formats do not work with structured!
+        unit='m',  # Overall unit should round-trip.
+        meta={1: 2},
+    )
+    t['b'] = Column(
+        [[(1.0, 2.0), (9.0, 8.0)], [(3.0, 4.0), (7.0, 6.0)]],
+        dtype='f8,f8',
+        unit=u.Unit('m,s'),  # Per part unit should round-trip too.
+    )
 
     out = StringIO()
     t.write(out, format='ascii.ecsv')
@@ -267,8 +288,13 @@ def assert_objects_equal(obj1, obj2, attrs, compare_class=True):
 
     assert obj1.shape == obj2.shape
 
-    info_attrs = ['info.name', 'info.format', 'info.unit', 'info.description',
-                  'info.dtype']
+    info_attrs = [
+        'info.name',
+        'info.format',
+        'info.unit',
+        'info.description',
+        'info.dtype',
+    ]
     for attr in attrs + info_attrs:
         a1 = obj1
         a2 = obj2
@@ -298,8 +324,13 @@ def test_ecsv_mixins_ascii_read_class():
     (QTable if any Quantity subclasses, Table otherwise).
     """
     # Make a table with every mixin type except Quantities
-    t = QTable({name: col for name, col in mixin_cols.items()
-                if not isinstance(col.info, QuantityInfo)})
+    t = QTable(
+        {
+            name: col
+            for name, col in mixin_cols.items()
+            if not isinstance(col.info, QuantityInfo)
+        }
+    )
     out = StringIO()
     t.write(out, format="ascii.ecsv")
     t2 = ascii.read(out.getvalue(), format='ecsv')
@@ -354,8 +385,11 @@ def test_ecsv_mixins_as_one(table_cls):
     for name in names:
         s_names = serialized_names[name]
         if not name.startswith('tm3'):
-            s_names = [s_name.replace('.jd1', '') for s_name in s_names
-                       if not s_name.endswith('jd2')]
+            s_names = [
+                s_name.replace('.jd1', '')
+                for s_name in s_names
+                if not s_name.endswith('jd2')
+            ]
         all_serialized_names.extend(s_names)
 
     t = table_cls([mixin_cols[name] for name in names], names=names)
@@ -382,7 +416,8 @@ def make_multidim(col, ndim):
     """
     if ndim > 1:
         import itertools
-        idxs = [idx for idx, _ in zip(itertools.cycle([0, 1]), range(3 ** ndim))]
+
+        idxs = [idx for idx, _ in zip(itertools.cycle([0, 1]), range(3**ndim))]
         col = col[idxs].reshape([3] * ndim)
     return col
 
@@ -413,8 +448,11 @@ def test_ecsv_mixins_per_column(table_cls, name_col, ndim):
             compare = ['data']
         else:
             # Storing Longitude as Column loses wrap_angle.
-            compare = [attr for attr in compare_attrs[colname]
-                       if not (attr == 'wrap_angle' and table_cls is Table)]
+            compare = [
+                attr
+                for attr in compare_attrs[colname]
+                if not (attr == 'wrap_angle' and table_cls is Table)
+            ]
         assert_objects_equal(t[colname], t2[colname], compare)
 
     # Special case to make sure Column type doesn't leak into Time class data
@@ -584,8 +622,10 @@ def test_multidim_unknown_subtype(subtype):
 a
 [1,2]
 [3,4]"""
-    with pytest.warns(InvalidEcsvDatatypeWarning,
-                      match=rf"unexpected subtype '{subtype}' set for column 'a'"):
+    with pytest.warns(
+        InvalidEcsvDatatypeWarning,
+        match=rf"unexpected subtype '{subtype}' set for column 'a'",
+    ):
         t = ascii.read(txt, format='ecsv')
 
     assert t['a'].dtype.kind == 'U'
@@ -605,7 +645,9 @@ def test_multidim_bad_shape():
 a
 [1,2]
 [3,4]"""
-    with pytest.raises(ValueError, match="column 'a' failed to convert: shape mismatch"):
+    with pytest.raises(
+        ValueError, match="column 'a' failed to convert: shape mismatch"
+    ):
         Table.read(txt, format='ascii.ecsv')
 
 
@@ -645,8 +687,10 @@ def test_read_bad_datatype():
 a
 fail
 [3,4]"""
-    with pytest.warns(InvalidEcsvDatatypeWarning,
-                      match="unexpected datatype 'object' of column 'a' is not in allowed"):
+    with pytest.warns(
+        InvalidEcsvDatatypeWarning,
+        match="unexpected datatype 'object' of column 'a' is not in allowed",
+    ):
         t = Table.read(txt, format='ascii.ecsv')
     assert t['a'][0] == "fail"
     assert type(t['a'][1]) is str
@@ -665,14 +709,16 @@ a
 1+1j
 2+2j"""
 
-    with pytest.warns(InvalidEcsvDatatypeWarning,
-                      match="unexpected datatype 'complex' of column 'a' is not in allowed"):
+    with pytest.warns(
+        InvalidEcsvDatatypeWarning,
+        match="unexpected datatype 'complex' of column 'a' is not in allowed",
+    ):
         t = Table.read(txt, format='ascii.ecsv')
     assert t['a'].dtype.type is np.complex128
 
 
 def test_read_str():
-    """Test an ECSV file with a 'str' instead of 'string' datatype """
+    """Test an ECSV file with a 'str' instead of 'string' datatype"""
     txt = """\
 # %ECSV 1.0
 # ---
@@ -683,8 +729,10 @@ a
 sometext
 S"""  # also testing single character text
 
-    with pytest.warns(InvalidEcsvDatatypeWarning,
-                      match="unexpected datatype 'str' of column 'a' is not in allowed"):
+    with pytest.warns(
+        InvalidEcsvDatatypeWarning,
+        match="unexpected datatype 'str' of column 'a' is not in allowed",
+    ):
         t = Table.read(txt, format='ascii.ecsv')
     assert isinstance(t['a'][1], str)
     assert isinstance(t['a'][0], np.str_)
@@ -710,7 +758,7 @@ def test_full_repr_roundtrip():
     """Test round-trip of float values to full precision even with format
     specified"""
     t = Table()
-    t['a'] = np.array([np.pi, 1/7], dtype=np.float64)
+    t['a'] = np.array([np.pi, 1 / 7], dtype=np.float64)
     t['a'].info.format = '.2f'
     out = StringIO()
     t.write(out, format='ascii.ecsv')
@@ -735,6 +783,7 @@ def _get_ecsv_header_dict(text):
 
 def _make_expected_values(cols):
     from pprint import pformat
+
     for name, col in cols.items():
         t = Table()
         t[name] = col
@@ -753,8 +802,7 @@ cols = {}
 
 # Run of the mill scalar for completeness
 cols['scalar'] = np.array([1, 2], dtype=np.int16)
-exps['scalar'] = [
-    {'datatype': 'int16', 'name': 'scalar'}]
+exps['scalar'] = [{'datatype': 'int16', 'name': 'scalar'}]
 
 # Array of lists that works as a 2-d variable array. This is just treated
 # as an object.
@@ -762,80 +810,83 @@ cols['2-d variable array lists'] = c = np.empty(shape=(2,), dtype=object)
 c[0] = [[1, 2], ["a", 4]]
 c[1] = [[1, 2, 3], [4, 5.25, 6]]
 exps['2-d variable array lists'] = [
-    {'datatype': 'string',
-     'name': '2-d variable array lists',
-     'subtype': 'json'}]
+    {'datatype': 'string', 'name': '2-d variable array lists', 'subtype': 'json'}
+]
 
 # Array of numpy arrays that is a 2-d variable array
 cols['2-d variable array numpy'] = c = np.empty(shape=(2,), dtype=object)
 c[0] = np.array([[1, 2], [3, 4]], dtype=np.float32)
 c[1] = np.array([[1, 2, 3], [4, 5.5, 6]], dtype=np.float32)
 exps['2-d variable array numpy'] = [
-    {'datatype': 'string',
-     'name': '2-d variable array numpy',
-     'subtype': 'float32[2,null]'}]
+    {
+        'datatype': 'string',
+        'name': '2-d variable array numpy',
+        'subtype': 'float32[2,null]',
+    }
+]
 
 cols['1-d variable array lists'] = np.array([[1, 2], [3, 4, 5]], dtype=object)
 exps['1-d variable array lists'] = [
-    {'datatype': 'string',
-     'name': '1-d variable array lists',
-     'subtype': 'json'}]
+    {'datatype': 'string', 'name': '1-d variable array lists', 'subtype': 'json'}
+]
 
 # Variable-length array
 cols['1-d variable array numpy'] = np.array(
-    [np.array([1, 2], dtype=np.uint8),
-     np.array([3, 4, 5], dtype=np.uint8)], dtype=object)
+    [np.array([1, 2], dtype=np.uint8), np.array([3, 4, 5], dtype=np.uint8)],
+    dtype=object,
+)
 exps['1-d variable array numpy'] = [
-    {'datatype': 'string',
-     'name': '1-d variable array numpy',
-     'subtype': 'uint8[null]'}]
+    {'datatype': 'string', 'name': '1-d variable array numpy', 'subtype': 'uint8[null]'}
+]
 
 cols['1-d variable array numpy str'] = np.array(
-    [np.array(['a', 'b']),
-     np.array(['c', 'd', 'e'])], dtype=object)
+    [np.array(['a', 'b']), np.array(['c', 'd', 'e'])], dtype=object
+)
 exps['1-d variable array numpy str'] = [
-    {'datatype': 'string',
-     'name': '1-d variable array numpy str',
-     'subtype': 'string[null]'}]
+    {
+        'datatype': 'string',
+        'name': '1-d variable array numpy str',
+        'subtype': 'string[null]',
+    }
+]
 
 cols['1-d variable array numpy bool'] = np.array(
-    [np.array([True, False]),
-     np.array([True, False, True])], dtype=object)
+    [np.array([True, False]), np.array([True, False, True])], dtype=object
+)
 exps['1-d variable array numpy bool'] = [
-    {'datatype': 'string',
-     'name': '1-d variable array numpy bool',
-     'subtype': 'bool[null]'}]
+    {
+        'datatype': 'string',
+        'name': '1-d variable array numpy bool',
+        'subtype': 'bool[null]',
+    }
+]
 
 cols['1-d regular array'] = np.array([[1, 2], [3, 4]], dtype=np.int8)
 exps['1-d regular array'] = [
-    {'datatype': 'string',
-     'name': '1-d regular array',
-     'subtype': 'int8[2]'}]
+    {'datatype': 'string', 'name': '1-d regular array', 'subtype': 'int8[2]'}
+]
 
 cols['2-d regular array'] = np.arange(8, dtype=np.float16).reshape(2, 2, 2)
 exps['2-d regular array'] = [
-    {'datatype': 'string',
-     'name': '2-d regular array',
-     'subtype': 'float16[2,2]'}]
+    {'datatype': 'string', 'name': '2-d regular array', 'subtype': 'float16[2,2]'}
+]
 
 cols['scalar object'] = np.array([{'a': 1}, {'b': 2}], dtype=object)
 exps['scalar object'] = [
-    {'datatype': 'string', 'name': 'scalar object', 'subtype': 'json'}]
+    {'datatype': 'string', 'name': 'scalar object', 'subtype': 'json'}
+]
 
 cols['1-d object'] = np.array(
-    [[{'a': 1}, {'b': 2}],
-     [{'a': 1}, {'b': 2}]], dtype=object)
+    [[{'a': 1}, {'b': 2}], [{'a': 1}, {'b': 2}]], dtype=object
+)
 exps['1-d object'] = [
-    {'datatype': 'string',
-     'name': '1-d object',
-     'subtype': 'json[2]'}]
+    {'datatype': 'string', 'name': '1-d object', 'subtype': 'json[2]'}
+]
 
 
-@pytest.mark.parametrize('name,col,exp',
-                         list(zip(cols, cols.values(), exps.values())))
+@pytest.mark.parametrize('name,col,exp', list(zip(cols, cols.values(), exps.values())))
 def test_specialized_columns(name, col, exp):
-    """Test variable length lists, multidim columns, object columns.
-    """
+    """Test variable length lists, multidim columns, object columns."""
     t = Table()
     t[name] = col
     out = StringIO()
@@ -862,21 +913,25 @@ def test_full_subtypes():
     f_double columns.
     """
     t = Table.read(os.path.join(TEST_DIR, 'data', 'subtypes.ecsv'))
-    colnames = ('i_index,'
-                's_byte,s_short,s_int,s_long,s_float,s_double,s_string,s_boolean,'
-                'f_byte,f_short,f_int,f_long,f_float,f_double,f_string,f_boolean,'
-                'v_byte,v_short,v_int,v_long,v_float,v_double,v_string,v_boolean,'
-                'm_int,m_double').split(',')
+    colnames = (
+        'i_index,'
+        's_byte,s_short,s_int,s_long,s_float,s_double,s_string,s_boolean,'
+        'f_byte,f_short,f_int,f_long,f_float,f_double,f_string,f_boolean,'
+        'v_byte,v_short,v_int,v_long,v_float,v_double,v_string,v_boolean,'
+        'm_int,m_double'
+    ).split(',')
     assert t.colnames == colnames
 
-    type_map = {'byte': 'int8',
-                'short': 'int16',
-                'int': 'int32',
-                'long': 'int64',
-                'float': 'float32',
-                'double': 'float64',
-                'string': 'str',
-                'boolean': 'bool'}
+    type_map = {
+        'byte': 'int8',
+        'short': 'int16',
+        'int': 'int32',
+        'long': 'int64',
+        'float': 'float32',
+        'double': 'float64',
+        'string': 'str',
+        'boolean': 'bool',
+    }
 
     for col in t.itercols():
         info = col.info

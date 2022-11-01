@@ -63,9 +63,9 @@ def test_too_long_colname_notstrict():
         ascii.write(table, out, Writer=Ipac, DBMS=False)
 
 
-@pytest.mark.parametrize(("strict_", "Err"),
-                         [(True, IpacFormatErrorDBMS),
-                          (False, IpacFormatError)])
+@pytest.mark.parametrize(
+    ("strict_", "Err"), [(True, IpacFormatErrorDBMS), (False, IpacFormatError)]
+)
 def test_non_alfnum_colname(strict_, Err):
     table = Table([[3]], names=['a123456789 01234'])
     out = StringIO()
@@ -96,8 +96,10 @@ def test_reserved_colname_strict(colname):
 
 
 def test_too_long_comment():
-    with pytest.warns(UserWarning, match=r'Comment string > 78 characters was '
-                      r'automatically wrapped\.'):
+    with pytest.warns(
+        UserWarning,
+        match=r'Comment string > 78 characters was ' r'automatically wrapped\.',
+    ):
         table = Table([[3]])
         table.meta['comments'] = ['a' * 79]
         out = StringIO()
@@ -150,8 +152,10 @@ def test_include_exclude_names():
 
 
 def test_short_dtypes():
-    table = Table([Column([1.0], dtype='f4'), Column([2], dtype='i2')],
-                  names=('float_col', 'int_col'))
+    table = Table(
+        [Column([1.0], dtype='f4'), Column([2], dtype='i2')],
+        names=('float_col', 'int_col'),
+    )
     out = StringIO()
     ascii.write(table, out, Writer=Ipac)
     expected_out = """\

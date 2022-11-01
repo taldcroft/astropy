@@ -51,6 +51,7 @@ class RST(FixedWidth):
     line of dashes in the header.
 
     """
+
     _format_name = 'rst'
     _description = 'reStructuredText simple table'
     data_class = SimpleRSTData

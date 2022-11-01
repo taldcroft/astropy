@@ -123,7 +123,9 @@ def _get_type_from_list_of_lines(lines, delimiter=None):
     types = [_line_type(line, delimiter=delimiter) for line in lines]
     current_ncol = None
     for type_ in types:
-        if type_.startswith('data', ):
+        if type_.startswith(
+            'data',
+        ):
             ncol = int(type_[5:])
             if current_ncol is None:
                 current_ncol = ncol
@@ -287,7 +289,7 @@ def _get_tables_from_qdp_file(qdp_file, input_colnames=None, delimiter=None):
             if err_specs != {}:
                 warnings.warn(
                     "This file contains multiple command blocks. Please verify",
-                    AstropyUserWarning
+                    AstropyUserWarning,
                 )
             command_lines += line + '\n'
             continue
@@ -300,12 +302,9 @@ def _get_tables_from_qdp_file(qdp_file, input_colnames=None, delimiter=None):
                     # This should never happen, but just in case.
                     if len(command) < 3:
                         continue
-                    err_specs[command[1].lower()] = [int(c) for c in
-                                                     command[2:]]
+                    err_specs[command[1].lower()] = [int(c) for c in command[2:]]
             if colnames is None:
-                colnames = _interpret_err_lines(
-                    err_specs, ncol, names=input_colnames
-                )
+                colnames = _interpret_err_lines(err_specs, ncol, names=input_colnames)
 
             if current_rows is None:
                 current_rows = []
@@ -327,7 +326,9 @@ def _get_tables_from_qdp_file(qdp_file, input_colnames=None, delimiter=None):
             # Save table to table_list and reset
             if current_rows is not None:
                 new_table = Table(names=colnames, rows=current_rows)
-                new_table.meta["initial_comments"] = initial_comments.strip().split("\n")
+                new_table.meta["initial_comments"] = initial_comments.strip().split(
+                    "\n"
+                )
                 new_table.meta["comments"] = comment_text.strip().split("\n")
                 # Reset comments
                 comment_text = ""
@@ -413,11 +414,15 @@ def _read_table_qdp(qdp_file, names=None, table_id=None, delimiter=None):
         List containing all the tables present inside the QDP file
     """
     if table_id is None:
-        warnings.warn("table_id not specified. Reading the first available "
-                      "table", AstropyUserWarning)
+        warnings.warn(
+            "table_id not specified. Reading the first available " "table",
+            AstropyUserWarning,
+        )
         table_id = 0
 
-    tables = _get_tables_from_qdp_file(qdp_file, input_colnames=names, delimiter=delimiter)
+    tables = _get_tables_from_qdp_file(
+        qdp_file, input_colnames=names, delimiter=delimiter
+    )
 
     return tables[table_id]
 
@@ -440,6 +445,7 @@ def _write_table_qdp(table, filename=None, err_specs=None):
         specification)
     """
     import io
+
     fobj = io.StringIO()
 
     if 'initial_comments' in table.meta and table.meta['initial_comments'] != []:
@@ -494,6 +500,7 @@ class QDPSplitter(core.DefaultSplitter):
     """
     Split on space for QDP tables
     """
+
     delimiter = ' '
 
 
@@ -501,6 +508,7 @@ class QDPHeader(basic.CommentedHeaderHeader):
     """
     Header that uses the :class:`astropy.io.ascii.basic.QDPSplitter`
     """
+
     splitter_class = QDPSplitter
     comment = "!"
     write_comment = "!"
@@ -510,6 +518,7 @@ class QDPData(basic.BasicData):
     """
     Data that uses the :class:`astropy.io.ascii.basic.CsvSplitter`
     """
+
     splitter_class = QDPSplitter
     fill_values = [(core.masked, 'NO')]
     comment = "!"
@@ -607,6 +616,7 @@ class QDP(basic.Basic):
     Note how the ``terr`` and ``serr`` commands are passed to the writer.
 
     """
+
     _format_name = 'qdp'
     _io_registry_can_write = True
     _io_registry_suffix = '.qdp'
@@ -624,8 +634,12 @@ class QDP(basic.Basic):
 
     def read(self, table):
         self.lines = self.inputter.get_lines(table, newline="\n")
-        return _read_table_qdp(self.lines, table_id=self.table_id,
-                               names=self.names, delimiter=self.delimiter)
+        return _read_table_qdp(
+            self.lines,
+            table_id=self.table_id,
+            names=self.names,
+            delimiter=self.delimiter,
+        )
 
     def write(self, table):
         self._check_multidim_table(table)

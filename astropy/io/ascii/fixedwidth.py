@@ -29,13 +29,14 @@ class FixedWidthSplitter(core.BaseSplitter):
     useful for fixed-width input.
 
     """
+
     delimiter_pad = ''
     bookend = False
     delimiter = '|'
 
     def __call__(self, lines):
         for line in lines:
-            vals = [line[x.start:x.end] for x in self.cols]
+            vals = [line[x.start : x.end] for x in self.cols]
             if self.process_val:
                 yield [self.process_val(x) for x in vals]
             else:
@@ -57,6 +58,7 @@ class FixedWidthSplitter(core.BaseSplitter):
 
 class FixedWidthHeaderSplitter(DefaultSplitter):
     '''Splitter class that splits on ``|``.'''
+
     delimiter = '|'
 
 
@@ -64,9 +66,10 @@ class FixedWidthHeader(basic.BasicHeader):
     """
     Fixed width table header reader.
     """
+
     splitter_class = FixedWidthHeaderSplitter
     """ Splitter class for splitting data lines into columns """
-    position_line = None   # secondary header line position
+    position_line = None  # secondary header line position
     """ row index of line that specifies position (default = 1) """
     set_of_position_line_characters = set(r'`~!#$%^&*-_+=\|":' + "'")
 
@@ -95,14 +98,18 @@ class FixedWidthHeader(basic.BasicHeader):
 
         # See "else" clause below for explanation of start_line and position_line
         start_line = core._get_line_index(self.start_line, self.process_lines(lines))
-        position_line = core._get_line_index(self.position_line, self.process_lines(lines))
+        position_line = core._get_line_index(
+            self.position_line, self.process_lines(lines)
+        )
 
         # If start_line is none then there is no header line.  Column positions are
         # determined from first data line and column names are either supplied by user
         # or auto-generated.
         if start_line is None:
             if position_line is not None:
-                raise ValueError("Cannot set position_line without also setting header_start")
+                raise ValueError(
+                    "Cannot set position_line without also setting header_start"
+                )
 
             # data.data_lines attribute already set via self.data.get_data_lines(lines)
             # in BaseReader.read().  This includes slicing for data_start / data_end.
@@ -110,11 +117,11 @@ class FixedWidthHeader(basic.BasicHeader):
 
             if not data_lines:
                 raise InconsistentTableError(
-                    'No data lines found so cannot autogenerate column names')
+                    'No data lines found so cannot autogenerate column names'
+                )
             vals, starts, ends = self.get_fixedwidth_params(data_lines[0])
 
-            self.names = [self.auto_format.format(i)
-                          for i in range(1, len(vals) + 1)]
+            self.names = [self.auto_format.format(i) for i in range(1, len(vals) + 1)]
 
         else:
             # This bit of code handles two cases:
@@ -135,17 +142,20 @@ class FixedWidthHeader(basic.BasicHeader):
                 if len(set(line) - {self.splitter.delimiter, ' '}) != 1:
                     raise InconsistentTableError(
                         'Position line should only contain delimiters and '
-                        'one other character, e.g. "--- ------- ---".')
+                        'one other character, e.g. "--- ------- ---".'
+                    )
                     # The line above lies. It accepts white space as well.
                     # We don't want to encourage using three different
                     # characters, because that can cause ambiguities, but white
                     # spaces are so common everywhere that practicality beats
                     # purity here.
                 charset = self.set_of_position_line_characters.union(
-                    {self.splitter.delimiter, ' '})
+                    {self.splitter.delimiter, ' '}
+                )
                 if not set(line).issubset(charset):
                     raise InconsistentTableError(
-                        f'Characters in position line must be part of {charset}')
+                        f'Characters in position line must be part of {charset}'
+                    )
                 vals, self.col_starts, col_ends = self.get_fixedwidth_params(line)
                 self.col_ends = [x - 1 if x is not None else None for x in col_ends]
 
@@ -202,7 +212,9 @@ class FixedWidthHeader(basic.BasicHeader):
             # user supplies inclusive endpoint
             ends = [x + 1 if x is not None else None for x in self.col_ends]
             if len(starts) != len(ends):
-                raise ValueError('Fixed width col_starts and col_ends must have the same length')
+                raise ValueError(
+                    'Fixed width col_starts and col_ends must have the same length'
+                )
             vals = [line[start:end].strip() for start, end in zip(starts, ends)]
         elif self.col_starts is None and self.col_ends is None:
             # There might be a cleaner way to do this but it works...
@@ -241,6 +253,7 @@ class FixedWidthData(basic.BasicData):
     """
     Base table data reader.
     """
+
     splitter_class = FixedWidthSplitter
     """ Splitter class for splitting data lines into columns """
     start_line = None
@@ -265,14 +278,15 @@ class FixedWidthData(basic.BasicData):
             hdrs_list.append(vals)
 
         # Widths for data columns
-        widths = [max(len(vals[i_col]) for vals in vals_list)
-                  for i_col in range(len(self.cols))]
+        widths = [
+            max(len(vals[i_col]) for vals in vals_list)
+            for i_col in range(len(self.cols))
+        ]
         # Incorporate widths for header columns (if there are any)
         if hdrs_list:
             for i_col in range(len(self.cols)):
                 widths[i_col] = max(
-                    widths[i_col],
-                    max(len(vals[i_col]) for vals in hdrs_list)
+                    widths[i_col], max(len(vals[i_col]) for vals in hdrs_list)
                 )
 
         # Now collect formatted header and data lines into the output lines
@@ -315,6 +329,7 @@ class FixedWidth(basic.Basic):
     See the :ref:`astropy:fixed_width_gallery` for specific usage examples.
 
     """
+
     _format_name = 'fixed_width'
     _description = 'Fixed width'
 
@@ -327,7 +342,7 @@ class FixedWidth(basic.Basic):
         col_ends=None,
         delimiter_pad=' ',
         bookend=True,
-        header_rows=None
+        header_rows=None,
     ):
         if header_rows is None:
             header_rows = ["name"]
@@ -344,11 +359,13 @@ class FixedWidth(basic.Basic):
 
 class FixedWidthNoHeaderHeader(FixedWidthHeader):
     '''Header reader for fixed with tables with no header line'''
+
     start_line = None
 
 
 class FixedWidthNoHeaderData(FixedWidthData):
     '''Data reader for fixed width tables with no header line'''
+
     start_line = 0
 
 
@@ -379,14 +396,20 @@ class FixedWidthNoHeader(FixedWidth):
     See the :ref:`astropy:fixed_width_gallery` for specific usage examples.
 
     """
+
     _format_name = 'fixed_width_no_header'
     _description = 'Fixed width with no header'
     header_class = FixedWidthNoHeaderHeader
     data_class = FixedWidthNoHeaderData
 
     def __init__(self, col_starts=None, col_ends=None, delimiter_pad=' ', bookend=True):
-        super().__init__(col_starts, col_ends, delimiter_pad=delimiter_pad,
-                         bookend=bookend, header_rows=[])
+        super().__init__(
+            col_starts,
+            col_ends,
+            delimiter_pad=delimiter_pad,
+            bookend=bookend,
+            header_rows=[],
+        )
 
 
 class FixedWidthTwoLineHeader(FixedWidthHeader):
@@ -396,16 +419,19 @@ class FixedWidthTwoLineHeader(FixedWidthHeader):
     a white-space delimited format line, so splitting on white space is
     needed.
     '''
+
     splitter_class = DefaultSplitter
 
 
 class FixedWidthTwoLineDataSplitter(FixedWidthSplitter):
     '''Splitter for fixed width tables splitting on ``' '``.'''
+
     delimiter = ' '
 
 
 class FixedWidthTwoLineData(FixedWidthData):
     '''Data reader for fixed with tables with two header lines.'''
+
     splitter_class = FixedWidthTwoLineDataSplitter
 
 
@@ -436,6 +462,7 @@ class FixedWidthTwoLine(FixedWidth):
     See the :ref:`astropy:fixed_width_gallery` for specific usage examples.
 
     """
+
     _format_name = 'fixed_width_two_line'
     _description = 'Fixed width with second header line'
     data_class = FixedWidthTwoLineData
@@ -447,14 +474,15 @@ class FixedWidthTwoLine(FixedWidth):
         position_char='-',
         delimiter_pad=None,
         bookend=False,
-        header_rows=None
+        header_rows=None,
     ):
         if len(position_char) != 1:
             raise ValueError(
-                f'Position_char="{position_char}" must be a ''single character'
+                f'Position_char="{position_char}" must be a ' 'single character'
             )
-        super().__init__(delimiter_pad=delimiter_pad, bookend=bookend,
-                         header_rows=header_rows)
+        super().__init__(
+            delimiter_pad=delimiter_pad, bookend=bookend, header_rows=header_rows
+        )
         if position_line is None:
             position_line = len(self.header.header_rows)
         self.header.position_line = position_line

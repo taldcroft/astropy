@@ -77,11 +77,13 @@ def test_roundtrip(tmp_path):
     with open(path, "w") as fp:
         print(example_qdp, file=fp)
     with pytest.warns(AstropyUserWarning) as record:
-        table = _read_table_qdp(path, names=["MJD", "Rate"],
-                                table_id=0)
-    assert np.any(["This file contains multiple command blocks"
-                   in r.message.args[0]
-                   for r in record])
+        table = _read_table_qdp(path, names=["MJD", "Rate"], table_id=0)
+    assert np.any(
+        [
+            "This file contains multiple command blocks" in r.message.args[0]
+            for r in record
+        ]
+    )
 
     _write_table_qdp(table, path2)
 
@@ -93,8 +95,9 @@ def test_roundtrip(tmp_path):
             # All NaN values are read as such.
             assert np.ma.is_masked(table[col][is_masked])
 
-        is_nan = np.array([(not np.ma.is_masked(val) and np.isnan(val))
-                           for val in new_table[col]])
+        is_nan = np.array(
+            [(not np.ma.is_masked(val) and np.isnan(val)) for val in new_table[col]]
+        )
         # All non-NaN values are the same
         assert np.allclose(new_table[col][~is_nan], table[col][~is_nan])
         if np.any(is_nan):
@@ -122,10 +125,10 @@ def test_read_example():
         54000.5   2.25  -2.5   NO  3.5  5.5 5
         55000.5   3.25  -3.5   4  4.5  6.5 nan
         """
-    dat = ascii.read(example_qdp, format='qdp', table_id=1,
-                     names=['a', 'b', 'c', 'd'])
-    t = Table.read(example_qdp, format='ascii.qdp', table_id=1,
-                   names=['a', 'b', 'c', 'd'])
+    dat = ascii.read(example_qdp, format='qdp', table_id=1, names=['a', 'b', 'c', 'd'])
+    t = Table.read(
+        example_qdp, format='ascii.qdp', table_id=1, names=['a', 'b', 'c', 'd']
+    )
 
     assert np.allclose(t['a'], [54000, 55000])
     assert t['c_err'][0] == 5.5
@@ -154,8 +157,9 @@ def test_roundtrip_example(tmp_path):
         """
     test_file = tmp_path / 'test.qdp'
 
-    t = Table.read(example_qdp, format='ascii.qdp', table_id=1,
-                   names=['a', 'b', 'c', 'd'])
+    t = Table.read(
+        example_qdp, format='ascii.qdp', table_id=1, names=['a', 'b', 'c', 'd']
+    )
     t.write(test_file, err_specs={'terr': [1], 'serr': [3]})
     t2 = Table.read(test_file, names=['a', 'b', 'c', 'd'], table_id=0)
 
@@ -181,8 +185,9 @@ def test_roundtrip_example_comma(tmp_path):
         """
     test_file = tmp_path / 'test.qdp'
 
-    t = Table.read(example_qdp, format='ascii.qdp', table_id=1,
-                   names=['a', 'b', 'c', 'd'], sep=',')
+    t = Table.read(
+        example_qdp, format='ascii.qdp', table_id=1, names=['a', 'b', 'c', 'd'], sep=','
+    )
     t.write(test_file, err_specs={'terr': [1], 'serr': [3]})
     t2 = Table.read(test_file, names=['a', 'b', 'c', 'd'], table_id=0)
 
@@ -195,14 +200,21 @@ def test_read_write_simple(tmp_path):
     test_file = tmp_path / 'test.qdp'
     t1 = Table()
     t1.add_column(Column(name='a', data=[1, 2, 3, 4]))
-    t1.add_column(MaskedColumn(data=[4., np.nan, 3., 1.], name='b',
-                               mask=[False, False, False, True]))
+    t1.add_column(
+        MaskedColumn(
+            data=[4.0, np.nan, 3.0, 1.0], name='b', mask=[False, False, False, True]
+        )
+    )
     t1.write(test_file, format='ascii.qdp')
     with pytest.warns(UserWarning) as record:
         t2 = Table.read(test_file, format='ascii.qdp')
-    assert np.any(["table_id not specified. Reading the first available table"
-                   in r.message.args[0]
-                   for r in record])
+    assert np.any(
+        [
+            "table_id not specified. Reading the first available table"
+            in r.message.args[0]
+            for r in record
+        ]
+    )
 
     assert np.allclose(t2['col1'], t1['a'])
     assert np.all(t2['col1'] == t1['a'])

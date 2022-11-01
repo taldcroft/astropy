@@ -6,9 +6,14 @@ import numpy as np
 
 from astropy.utils.decorators import deprecated
 
-__all__ = ['assert_equal', 'assert_almost_equal',
-           'assert_true', 'setup_function', 'teardown_function',
-           'has_isnan']
+__all__ = [
+    'assert_equal',
+    'assert_almost_equal',
+    'assert_true',
+    'setup_function',
+    'teardown_function',
+    'has_isnan',
+]
 
 CWD = os.getcwd()
 TEST_DIR = os.path.dirname(__file__)
@@ -51,6 +56,7 @@ def make_decorator(func):
     of the decorated function, including nose's additional stuff
     (namely, setup and teardown).
     """
+
     def decorate(newfunc):
         if hasattr(func, 'compat_func_name'):
             name = func.compat_func_name
@@ -70,6 +76,7 @@ def make_decorator(func):
             # can't set func name in 2.3
             newfunc.compat_func_name = name
         return newfunc
+
     return decorate
 
 
@@ -101,6 +108,8 @@ def raises(*exceptions):
             else:
                 message = f"{name}() did not raise {valid}"
                 raise AssertionError(message)
+
         newfunc = make_decorator(func)(newfunc)
         return newfunc
+
     return decorate

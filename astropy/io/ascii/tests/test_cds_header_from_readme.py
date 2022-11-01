@@ -39,9 +39,13 @@ def test_description():
         assert_equal(table['Star'].description, '')
         assert_equal(table['Wave'].description, 'wave? Wavelength in Angstroms')
         assert_equal(table['El'].description, 'a')
-        assert_equal(table['ion'].description, '- Ionization stage (1 for neutral element)')
+        assert_equal(
+            table['ion'].description, '- Ionization stage (1 for neutral element)'
+        )
         assert_equal(table['EW'].description, 'Equivalent width (in mA)')
-        assert_equal(table['Q'].description, 'DAOSPEC quality parameter Q(large values are bad)')
+        assert_equal(
+            table['Q'].description, 'DAOSPEC quality parameter Q(large values are bad)'
+        )
 
 
 def test_multi_header():
@@ -76,21 +80,23 @@ def test_header_from_readme():
     assert len(r.data.data_lines) == 15
     assert len(table) == 15
     assert len(table.keys()) == 18
-    Bmag = [14.79,
-            15.00,
-            14.80,
-            12.38,
-            12.36,
-            12.24,
-            13.75,
-            13.65,
-            13.41,
-            11.59,
-            11.68,
-            11.53,
-            13.92,
-            14.03,
-            14.18]
+    Bmag = [
+        14.79,
+        15.00,
+        14.80,
+        12.38,
+        12.36,
+        12.24,
+        13.75,
+        13.65,
+        13.41,
+        11.59,
+        11.68,
+        11.53,
+        13.92,
+        14.03,
+        14.18,
+    ]
     for i, val in enumerate(table.field('Bmag')):
         assert val == Bmag[i]
 
@@ -98,55 +104,57 @@ def test_header_from_readme():
     assert len(r.data.data_lines) == 49
     assert len(table) == 49
     assert len(table.keys()) == 10
-    Q = [0.289,
-         0.325,
-         0.510,
-         0.577,
-         0.539,
-         0.390,
-         0.957,
-         0.736,
-         1.435,
-         1.117,
-         1.473,
-         0.808,
-         1.416,
-         2.209,
-         0.617,
-         1.046,
-         1.604,
-         1.419,
-         1.431,
-         1.183,
-         1.210,
-         1.005,
-         0.706,
-         0.665,
-         0.340,
-         0.323,
-         0.391,
-         0.280,
-         0.343,
-         0.369,
-         0.495,
-         0.828,
-         1.113,
-         0.499,
-         1.038,
-         0.260,
-         0.863,
-         1.638,
-         0.479,
-         0.232,
-         0.627,
-         0.671,
-         0.371,
-         0.851,
-         0.607,
-         -9.999,
-         1.958,
-         1.416,
-         0.949]
+    Q = [
+        0.289,
+        0.325,
+        0.510,
+        0.577,
+        0.539,
+        0.390,
+        0.957,
+        0.736,
+        1.435,
+        1.117,
+        1.473,
+        0.808,
+        1.416,
+        2.209,
+        0.617,
+        1.046,
+        1.604,
+        1.419,
+        1.431,
+        1.183,
+        1.210,
+        1.005,
+        0.706,
+        0.665,
+        0.340,
+        0.323,
+        0.391,
+        0.280,
+        0.343,
+        0.369,
+        0.495,
+        0.828,
+        1.113,
+        0.499,
+        1.038,
+        0.260,
+        0.863,
+        1.638,
+        0.479,
+        0.232,
+        0.627,
+        0.671,
+        0.371,
+        0.851,
+        0.607,
+        -9.999,
+        1.958,
+        1.416,
+        0.949,
+    ]
     for i, val in enumerate(table.field('Q')):
         if val is np.ma.masked:
             # text value for a missing value in that table
@@ -158,6 +166,7 @@ def test_header_from_readme():
 @pytest.mark.parametrize('reader_cls', (ascii.Cds, ascii.Mrt))
 def test_cds_units(reader_cls):
     from astropy import units
+
     data_and_readme = 'data/cds.dat'
     reader = ascii.get_reader(reader_cls)
     table = reader.read(data_and_readme)
@@ -171,7 +180,7 @@ def test_cds_function_units(reader_cls):
     data_and_readme = 'data/cdsFunctional.dat'
     reader = ascii.get_reader(reader_cls)
     table = reader.read(data_and_readme)
-    assert table['logg'].unit == u.dex(u.cm/u.s**2)
+    assert table['logg'].unit == u.dex(u.cm / u.s**2)
     assert table['logTe'].unit == u.dex(u.K)
     assert table['Mass'].unit == u.Msun
     assert table['e_Mass'].unit == u.Msun
@@ -186,12 +195,13 @@ def test_cds_function_units2(reader_cls):
     reader = ascii.get_reader(reader_cls)
     table = reader.read(data_and_readme)
     assert table['Teff'].unit == u.K
-    assert table['logg'].unit == u.dex(u.cm/u.s**2)
-    assert table['vturb'].unit == u.km/u.s
+    assert table['logg'].unit == u.dex(u.cm / u.s**2)
+    assert table['vturb'].unit == u.km / u.s
     assert table['[Fe/H]'].unit == u.dex(u.one)
     assert table['e_[Fe/H]'].unit == u.dex(u.one)
-    assert_almost_equal(table['[Fe/H]'].to(u.one),
-                        10.**(np.array([-2.07, -1.50, -2.11, -1.64])))
+    assert_almost_equal(
+        table['[Fe/H]'].to(u.one), 10.0 ** (np.array([-2.07, -1.50, -2.11, -1.64]))
+    )
 
 
 def test_cds_ignore_nullable():
@@ -217,8 +227,10 @@ def test_cds_no_whitespace():
     assert_equal(r.header.cols[6].null, '')
     assert_equal(r.header.cols[7].description, 'Equivalent width (in mA)')
     assert_equal(r.header.cols[7].null, '-9.9')
-    assert_equal(r.header.cols[10].description,
-                 'DAOSPEC quality parameter Q(large values are bad)')
+    assert_equal(
+        r.header.cols[10].description,
+        'DAOSPEC quality parameter Q(large values are bad)',
+    )
     assert_equal(r.header.cols[10].null, '-9.999')
 
 
