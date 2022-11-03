@@ -39,14 +39,14 @@ class SExtractorHeader(core.BaseHeader):
         # Updated along with issue #4603, for more robust parsing of unit
         re_name_def = re.compile(
             r"""^\s* \# \s*             # possible whitespace around #
-                                 (?P<colnumber> [0-9]+)\s+   # number of the column in table
-                                 (?P<colname> [-\w]+)        # name of the column
-                                 # column description, match any character until...
-                                 (?:\s+(?P<coldescr> \w .+)
-                                 # ...until [non-space][space][unit] or [not-right-bracket][end]
-                                 (?:(?<!(\]))$|(?=(?:(?<=\S)\s+\[.+\]))))?
-                                 (?:\s*\[(?P<colunit>.+)\])?.* # match units in brackets
-                                 """,
+                (?P<colnumber> [0-9]+)\s+   # number of the column in table
+                (?P<colname> [-\w]+)        # name of the column
+                # column description, match any character until...
+                (?:\s+(?P<coldescr> \w .+)
+                # ...until [non-space][space][unit] or [not-right-bracket][end]
+                (?:(?<!(\]))$|(?=(?:(?<=\S)\s+\[.+\]))))?
+                (?:\s*\[(?P<colunit>.+)\])?.* # match units in brackets
+                """,
             re.VERBOSE,
         )
         dataline = None
@@ -60,9 +60,8 @@ class SExtractorHeader(core.BaseHeader):
                     colnumber = int(match.group('colnumber'))
                     colname = match.group('colname')
                     coldescr = match.group('coldescr')
-                    colunit = match.group(
-                        'colunit'
-                    )  # If no units are given, colunit = None
+                    # If no units are given, colunit = None
+                    colunit = match.group('colunit')
                     columns[colnumber] = (colname, coldescr, colunit)
         # Handle skipped column numbers
         colnumbers = sorted(columns)

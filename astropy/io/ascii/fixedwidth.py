@@ -478,7 +478,7 @@ class FixedWidthTwoLine(FixedWidth):
     ):
         if len(position_char) != 1:
             raise ValueError(
-                f'Position_char="{position_char}" must be a ' 'single character'
+                f'Position_char="{position_char}" must be a single character'
             )
         super().__init__(
             delimiter_pad=delimiter_pad, bookend=bookend, header_rows=header_rows

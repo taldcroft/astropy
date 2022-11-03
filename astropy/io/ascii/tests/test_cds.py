@@ -436,8 +436,8 @@ def test_write_mixin_and_broken_cols():
         '--------------------------------------------------------------------------------',
         'HD81809 <SkyCoord (ICRS): (ra, dec) in deg',
         '    (330.564375, -61.65961111)> (0.41342785, -0.23329341, -0.88014294)  2019-01-01 00:00:00.000',  # noqa: E501
-        'random  12                                                                 (0.41342785, -0.23329341, -0.88014294)  2019-01-01 00:00:00.000',
-    ]  # noqa: E501
+        'random  12                                                                 (0.41342785, -0.23329341, -0.88014294)  2019-01-01 00:00:00.000',   # noqa: E501
+    ]
     t = Table()
     t['name'] = ['HD81809']
     coord = SkyCoord(330.564375, -61.65961111, unit=u.deg)
@@ -464,19 +464,19 @@ Byte-by-byte Description of file: table.dat
 --------------------------------------------------------------------------------
  Bytes Format Units  Label     Explanations
 --------------------------------------------------------------------------------
- 1- 7  A7     ---    name    Description of name     
- 9-10  I2     h      RAh     Right Ascension (hour)  
+ 1- 7  A7     ---    name    Description of name
+ 9-10  I2     h      RAh     Right Ascension (hour)
 12-13  I2     min    RAm     Right Ascension (minute)
 15-27  F13.10 s      RAs     Right Ascension (second)
-   29  A1     ---    DE-     Sign of Declination     
-30-31  I2     deg    DEd     Declination (degree)    
-33-34  I2     arcmin DEm     Declination (arcmin)    
-36-47  F12.9  arcsec DEs     Declination (arcsec)    
-49-62  A14    ---    coord2  Description of coord2   
+   29  A1     ---    DE-     Sign of Declination
+30-31  I2     deg    DEd     Declination (degree)
+33-34  I2     arcmin DEm     Declination (arcmin)
+36-47  F12.9  arcsec DEs     Declination (arcsec)
+49-62  A14    ---    coord2  Description of coord2
 --------------------------------------------------------------------------------
 Notes:
 --------------------------------------------------------------------------------
-HD4760   0 49 39.9000000000 +06 24 07.999200000 12.4163 6.407 
+HD4760   0 49 39.9000000000 +06 24 07.999200000 12.4163 6.407
 HD81809 22 02 15.4500000000 -61 39 34.599996000 330.564 -61.66
 '''  # noqa: W291
     t = Table()
@@ -515,14 +515,14 @@ Byte-by-byte Description of file: table.dat
 --------------------------------------------------------------------------------
  Bytes Format Units  Label     Explanations
 --------------------------------------------------------------------------------
- 1- 7  A7     ---    name    Description of name     
- 9-10  I2     h      RAh     Right Ascension (hour)  
+ 1- 7  A7     ---    name    Description of name
+ 9-10  I2     h      RAh     Right Ascension (hour)
 12-13  I2     min    RAm     Right Ascension (minute)
 15-19  F5.2   s      RAs     Right Ascension (second)
-   21  A1     ---    DE-     Sign of Declination     
-22-23  I2     deg    DEd     Declination (degree)    
-25-26  I2     arcmin DEm     Declination (arcmin)    
-28-31  F4.1   arcsec DEs     Declination (arcsec)    
+   21  A1     ---    DE-     Sign of Declination
+22-23  I2     deg    DEd     Declination (degree)
+25-26  I2     arcmin DEm     Declination (arcmin)
+28-31  F4.1   arcsec DEs     Declination (arcsec)
 --------------------------------------------------------------------------------
 Notes:
 --------------------------------------------------------------------------------

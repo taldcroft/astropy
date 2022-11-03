@@ -87,10 +87,10 @@ class MrtHeader(cds.CdsHeader):
         """
         regfloat = re.compile(
             r"""(?P<sign> [+-]*)
-                                  (?P<ent> [^eE.]+)
-                                  (?P<deciPt> [.]*)
-                                  (?P<decimals> [0-9]*)
-                                  (?P<exp> [eE]*-*)[0-9]*""",
+                (?P<ent> [^eE.]+)
+                (?P<deciPt> [.]*)
+                (?P<decimals> [0-9]*)
+                (?P<exp> [eE]*-*)[0-9]*""",
             re.VERBOSE,
         )
         mo = regfloat.match(value)
@@ -178,9 +178,8 @@ class MrtHeader(cds.CdsHeader):
                 maxprec = fmt[1] + fmt[2]
 
         if fformat == 'E':
-            if (
-                getattr(col, 'formatted_width', None) is None
-            ):  # If ``formats`` not passed.
+            # If ``formats`` not passed.
+            if getattr(col, 'formatted_width', None) is None:
                 col.formatted_width = maxsize
                 if sign:
                     col.formatted_width += 1
@@ -305,9 +304,8 @@ class MrtHeader(cds.CdsHeader):
                     mcol.fill_value = ""
                     coltmp = Column(mcol.filled(), dtype=str)
                     dtype = coltmp.dtype.str
-                if (
-                    getattr(col, 'formatted_width', None) is None
-                ):  # If ``formats`` not passed.
+                # If ``formats`` not passed.
+                if getattr(col, 'formatted_width', None) is None:
                     col.formatted_width = int(re.search(r'(\d+)$', dtype).group(1))
                 col.fortran_format = "A" + str(col.formatted_width)
                 col.format = str(col.formatted_width) + "s"

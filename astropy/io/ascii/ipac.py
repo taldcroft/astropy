@@ -125,7 +125,10 @@ class IpacHeader(fixedwidth.FixedWidthHeader):
         keywords = table_meta['keywords']
 
         re_keyword = re.compile(
-            r'\\' r'(?P<name> \w+)' r'\s* = (?P<value> .+) $', re.VERBOSE
+            r'\\'
+            + r'(?P<name> \w+)'
+            + r'\s* = (?P<value> .+) $',
+            re.VERBOSE
         )
         for line in lines:
             # Keywords and comments start with "\".  Once the first non-slash
@@ -178,9 +181,8 @@ class IpacHeader(fixedwidth.FixedWidthHeader):
             List of table lines
 
         """
-        header_lines = self.process_lines(
-            lines
-        )  # generator returning valid header lines
+        # generator returning valid header lines
+        header_lines = self.process_lines(lines)
         header_vals = [vals for vals in self.splitter(header_lines)]
         if len(header_vals) == 0:
             raise ValueError(

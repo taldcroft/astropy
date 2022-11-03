@@ -111,12 +111,12 @@ class CdsHeader(core.BaseHeader):
 
         re_col_def = re.compile(
             r"""\s*
-                                    (?P<start> \d+ \s* -)? \s*
-                                    (?P<end>   \d+)        \s+
-                                    (?P<format> [\w.]+)     \s+
-                                    (?P<units> \S+)        \s+
-                                    (?P<name>  \S+)
-                                    (\s+ (?P<descr> \S.*))?""",
+                (?P<start> \d+ \s* -)? \s*
+                (?P<end>   \d+)        \s+
+                (?P<format> [\w.]+)     \s+
+                (?P<units> \S+)        \s+
+                (?P<name>  \S+)
+                (\s+ (?P<descr> \S.*))?""",
             re.VERBOSE,
         )
 
@@ -140,16 +140,18 @@ class CdsHeader(core.BaseHeader):
                 col.type = self.get_col_type(col)
 
                 match = re.match(
-                    r'(?P<limits>[\[\]] \S* [\[\]])?'  # Matches limits specifier (eg [])
-                    # that may or may not be present
-                    r'\?'  # Matches '?' directly
-                    r'((?P<equal>=)(?P<nullval> \S*))?'  # Matches to nullval if and only
-                    # if '=' is present
-                    r'(?P<order>[-+]?[=]?)'  # Matches to order specifier:
-                    # ('+', '-', '+=', '-=')
-                    r'(\s* (?P<descriptiontext> \S.*))?',  # Matches description text even
-                    # even if no whitespace is
+                    # Matches limits specifier (eg []) that may or may not be
+                    # present
+                    r'(?P<limits>[\[\]] \S* [\[\]])?'
+                    # Matches '?' directly
+                    r'\?'
+                    # Matches to nullval if and only if '=' is present
+                    r'((?P<equal>=)(?P<nullval> \S*))?'
+                    # Matches to order specifier: ('+', '-', '+=', '-=')
+                    r'(?P<order>[-+]?[=]?)'
+                    # Matches description text even even if no whitespace is
                     # present after '?'
+                    r'(\s* (?P<descriptiontext> \S.*))?',
                     col.description,
                     re.VERBOSE,
                 )

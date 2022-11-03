@@ -18,9 +18,8 @@ def first_true_index(iterable, pred=None, default=None):
         func = operator.itemgetter(1)
     else:
         func = lambda x: pred(x[1])
-    ii = next(
-        filter(func, enumerate(iterable)), default
-    )  # either index-item pair or default
+    # either index-item pair or default
+    ii = next(filter(func, enumerate(iterable)), default)
     return ii[0] if ii else default
 
 
@@ -93,9 +92,8 @@ def sortmore(*args, **kw):
             # if global sort function given and no local (secondary) key given, ==> no tiebreakers
             key = lambda x: 0
         else:
-            key = (
-                lambda x: x
-            )  # if no global sort and no local sort keys given, sort by item values
+            # if no global sort and no local sort keys given, sort by item values
+            key = lambda x: x
     if globalkey is None:
         globalkey = lambda *x: 0
 

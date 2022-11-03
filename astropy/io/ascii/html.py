@@ -408,9 +408,8 @@ class HTML(core.BaseReader):
                 if 'jsfiles' in self.html:
                     for filename in self.html['jsfiles']:
                         with w.tag('script', src=filename):
-                            w.data(
-                                ''
-                            )  # need this instead of pass to get <script></script>
+                            # need this instead of pass to get <script></script>
+                            w.data('')
             with w.tag('body'):
                 if 'js' in self.html:
                     with w.xml_cleaning_method('none'):
