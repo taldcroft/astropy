@@ -962,8 +962,11 @@ class MaskedFormat:
 
         # Single element: first just typeset it normally, replace with masked
         # string if needed.
-        string = self.format_function(x.unmasked[()])
-        if x.mask:
+        return self.maybe_mask_string(self.format_function(x.unmasked[()]), x.mask)
+
+    @staticmethod
+    def maybe_mask_string(string, mask):
+        if mask:
             # Strikethrough would be neat, but terminal needs a different
             # formatting than, say, jupyter notebook.
             # return "\x1B[9m"+string+"\x1B[29m"
