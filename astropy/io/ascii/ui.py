@@ -970,6 +970,8 @@ def get_writer(writer_cls=None, fast_writer=True, **kwargs):
     ----------
     writer_cls : ``writer_cls``
         Writer class. Defaults to :class:`Basic`.
+    fast_writer : bool
+        Whether to use the fast Cython writer.
     delimiter : str
         Column delimiter string
     comment : str
@@ -986,8 +988,6 @@ def get_writer(writer_cls=None, fast_writer=True, **kwargs):
         List of names to include in output.
     exclude_names : list
         List of names to exclude from output (applied after ``include_names``)
-    fast_writer : bool
-        Whether to use the fast Cython writer.
 
     Returns
     -------

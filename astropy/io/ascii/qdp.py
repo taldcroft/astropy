@@ -27,6 +27,8 @@ def _line_type(line, delimiter=None):
     ----------
     line : str
         a single line of the file
+    delimiter : str
+        Any delimiter accepted by the `sep` argument of str.split(). Default is r"\\s+".
 
     Returns
     -------
@@ -95,6 +97,8 @@ def _get_type_from_list_of_lines(lines, delimiter=None):
     ----------
     lines : list
         List containing one file line in each entry
+    delimiter : str
+        Any delimiter accepted by the `sep` argument of str.split()
 
     Returns
     -------
@@ -399,9 +403,11 @@ def _read_table_qdp(qdp_file, names=None, table_id=None, delimiter=None):
         Name of data columns (defaults to ['col1', 'col2', ...]), _not_
         including error columns.
 
-    table_id : int, default 0
+    table_id : int, optional
         Number of the table to be read from the QDP file. This is useful
-        when multiple tables present in the file. By default, the first is read.
+        when multiple tables present in the file. If not specified, the first
+        table is read and an `~astropy.utils.exceptions.AstropyUserWarning`
+        is issued.
 
     delimiter : str
         Any delimiter accepted by the `sep` argument of str.split()
