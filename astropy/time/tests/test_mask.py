@@ -8,7 +8,7 @@ import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.table import Table
-from astropy.time import Time, conf
+from astropy.time import Time, TimeDelta, conf
 from astropy.utils import iers
 from astropy.utils.compat.optional_deps import HAS_H5PY
 from astropy.utils.masked import Masked
@@ -364,3 +364,86 @@ def test_datetime64_with_nat():
     t = Time(mdt64)
     assert t.masked
     assert np.all(t.mask == [True, True, False])
+
+
+def test_insert_masked():
+    """Time.insert must preserve the mask of the original object (gh-20230)."""
+    t = Time(["2001:001", "2001:002", "2001:003"])
+    t[0] = np.ma.masked
+    t[2] = np.ma.masked
+
+    out = t.insert(1, "2010:001")
+    assert out.masked
+    assert np.all(out.mask == [True, False, False, True])
+    assert out.value[1] == "2010:001:00:00:00.000"
+    assert out.value[2] == "2001:002:00:00:00.000"
+    # jd1 and jd2 must share the mask, as they do everywhere else.
+    assert np.may_share_memory(out._time.jd1.mask, out._time.jd2.mask)
+
+    # Insert at either end and with a negative index.
+    assert np.all(t.insert(0, "2010:001").mask == [False, True, False, True])
+    assert np.all(t.insert(3, "2010:001").mask == [True, False, True, False])
+    assert np.all(t.insert(-1, "2010:001").mask == [True, False, False, True])
+
+    # Insert more than one value.
+    out = t.insert(1, ["2010:001", "2010:002"])
+    assert np.all(out.mask == [True, False, False, False, True])
+
+    # An unmasked Time stays unmasked.
+    t_unmasked = Time(["2001:001", "2001:002"])
+    assert not t_unmasked.insert(1, "2010:001").masked
+
+
+def test_insert_masked_values():
+    """Inserting masked values into an unmasked Time keeps their mask (gh-20230)."""
+    t = Time([1.0, 2.0, 3.0], format="cxcsec")
+    values = Time([10.0, 20.0], format="cxcsec")
+    values[1] = np.ma.masked
+
+    out = t.insert(1, values)
+    assert out.masked
+    assert np.all(out.mask == [False, False, True, False, False])
+    assert np.all(out.value[[0, 1, 3, 4]] == [1.0, 10.0, 2.0, 3.0])
+
+    # A bare Masked array as the inserted values works too.
+    out = t.insert(1, Masked(np.array([10.0, 20.0]), mask=[False, True]))
+    assert np.all(out.mask == [False, False, True, False, False])
+
+    # A masked scalar Time.
+    value = Time(10.0, format="cxcsec")
+    value[()] = np.ma.masked
+    assert np.all(t.insert(1, value).mask == [False, True, False, False])
+
+    # Both sides masked.
+    t = t.copy()
+    t[2] = np.ma.masked
+    out = t.insert(1, values)
+    assert np.all(out.mask == [False, False, True, False, True])
+
+
+def test_insert_masked_2d():
+    t = Time(np.array(["2001:001", "2001:002", "2001:003", "2001:004"]).reshape(2, 2))
+    t[0, 1] = np.ma.masked
+    out = t.insert(1, "2010:001")
+    assert out.shape == (3, 2)
+    assert np.all(out.mask == [[False, True], [False, False], [False, False]])
+
+
+def test_insert_masked_timedelta():
+    dt = TimeDelta([1.0, 2.0, 3.0], format="jd")
+    dt[1] = np.ma.masked
+    out = dt.insert(0, TimeDelta(9.0, format="jd"))
+    assert out.masked
+    assert np.all(out.mask == [False, False, True, False])
+    assert np.all(out.value[[0, 1, 3]] == [9.0, 1.0, 3.0])
+
+
+def test_insert_masked_table_add_row():
+    """Table.add_row goes through Time.insert (gh-20230)."""
+    t = Time(["2001:001", "2001:002", "2001:003"])
+    t[0] = np.ma.masked
+    t[2] = np.ma.masked
+    tbl = Table([t], names=["time"])
+    tbl.add_row([Time("2010:001")])
+    assert tbl["time"].masked
+    assert np.all(tbl["time"].mask == [True, False, True, False])

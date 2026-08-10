@@ -1163,7 +1163,8 @@ class TimeBase(MaskableShapedLikeNDArray):
         # For non-Time object, use numpy to help figure out the length.  (Note annoying
         # case of a string input that has a length which is not the length we want).
         if not isinstance(values, self.__class__):
-            values = np.asarray(values)
+            # asanyarray, not asarray, so that a Masked input keeps its mask.
+            values = np.asanyarray(values)
         n_values = len(values) if values.shape else 1
 
         # Finally make the new object with the correct length and set values for the
@@ -1171,6 +1172,19 @@ class TimeBase(MaskableShapedLikeNDArray):
         out = self.__class__.info.new_like(
             [self], len(self) + n_values, name=self.info.name
         )
+
+        # ``new_like`` always makes an unmasked object, so if either self or the
+        # inserted values are masked then upgrade the output jd1/jd2 to Masked
+        # first (with a shared mask, as elsewhere).  Otherwise the assignments
+        # below would silently drop the mask (gh-20230).
+        values_masked = (
+            values.masked
+            if isinstance(values, TimeBase)
+            else isinstance(values, Masked)
+        )
+        if self.masked or values_masked:
+            out._time.jd1 = Masked(out._time.jd1, copy=False)
+            out._time.jd2 = Masked(out._time.jd2, mask=out._time.jd1.mask, copy=False)
 
         out._time.jd1[:idx0] = self._time.jd1[:idx0]
         out._time.jd2[:idx0] = self._time.jd2[:idx0]
