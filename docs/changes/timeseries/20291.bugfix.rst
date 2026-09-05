@@ -1,0 +1,5 @@
+``aggregate_downsample`` now works for a time series with a masked ``time``
+column, e.g. one created by folding on an epoch obtained from a
+``BoxLeastSquares`` periodogram. Rows with a masked time are excluded from all
+bins. In addition, the ``transit_time`` in ``BoxLeastSquares`` results is no
+longer masked when none of the values need to be masked.
